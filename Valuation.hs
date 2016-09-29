@@ -4,6 +4,7 @@ module Valuation where
 
 import Prelude hiding (and, or)
 import Control.Monad (liftM2, liftM3)
+import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Class
 
@@ -46,14 +47,7 @@ bigK t = do
 evalO :: MonadDist m => Model m -> Currency -> Obs a -> m (Trace a)
 evalO m k (Konst a) = bigK a
 evalO m k (Lift f a) = (.) <$> return f <*> evalO m k a
-  {--
-evalO m k (Lift f a) = evalO m k a >>= \g -> return $ f . g
-evalO m k (Lift f a) = do g <- evalO m k a
-                          return $ f . g
---}
-evalO m k (Lift2 f a b) = do g <- evalO m k a
-                             h <- evalO m k b
-                             return $ \t -> f (g t) (h t)
+evalO m k (Lift2 f a b) = liftA2 f <$> evalO m k a <*> evalO m k b
 evalO m k (Date) = return id
 evalO m k (Value c) = evalC m k c
 
