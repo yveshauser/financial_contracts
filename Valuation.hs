@@ -3,8 +3,7 @@
 module Valuation where
 
 import Prelude hiding (and, or)
-import Control.Monad (liftM2, liftM3)
-import Control.Applicative (liftA2)
+import Control.Applicative (liftA2, liftA3)
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Class
 
@@ -33,8 +32,8 @@ evalC m@(Model modelDate exch disc snell absorb) k = eval
         eval (Give c)       = -(eval c)
         eval (o `Scale` c)  = (evalO m k o) * (eval c)
         eval (c1 `And` c2)  = (eval c1) + (eval c2)
-        eval (c1 `Or` c2)   = liftM2 max' (eval c1) (eval c2)
-        eval (Cond o c1 c2) = liftM3 cond' (evalO m k o) (eval c1) (eval c2)
+        eval (c1 `Or` c2)   = liftA2 max' (eval c1) (eval c2)
+        eval (Cond o c1 c2) = liftA3 cond' (evalO m k o) (eval c1) (eval c2)
         eval (When o c)     = disc k (evalO m k o, eval c)
         eval (Anytime o c)  = snell k (evalO m k o, eval c)
         eval (Until o c)    = absorb k (evalO m k o, eval c)
@@ -66,8 +65,8 @@ cond' bs xs ys t = if (bs t) then (xs t) else (ys t)
 
 instance (Num a, MonadDist m) => Num (m (Trace a)) where
   fromInteger i = bigK (fromInteger i)
-  (+) = liftM2 (+)
-  (-) = liftM2 (-)
-  (*) = liftM2 (*)
+  (+) = liftA2 (+)
+  (-) = liftA2 (-)
+  (*) = liftA2 (*)
   abs = fmap abs
   signum = fmap signum
