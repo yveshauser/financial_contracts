@@ -2,6 +2,7 @@ import Contracts
 import Valuation
 
 import Prelude hiding (and, or)
+import Control.Monad (replicateM)
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
@@ -90,9 +91,12 @@ example_absorb k (b, d) = undefined
 
 test :: Contract -> IO Double
 test c = do g <- newStdGen
-            let tr = sample test g
-            return $ tr 10
+            let tr = sample (replicateM 10000 test) g
+            return $ avg $ map ($10) tr
   where test = evalC (example_model 0) CHF c
+
+avg :: [Double] -> Double
+avg xs = (sum xs) / fromIntegral (length xs)
 
 test1 = test zero
 test2 = test (one CHF)
