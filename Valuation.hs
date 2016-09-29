@@ -11,6 +11,7 @@ import Contracts
 
 type Time = Int
 type Trace a = Time -> a
+
 -- value process
 type Process m a = m (Trace a)
 
@@ -38,10 +39,10 @@ evalC m@(Model modelDate exch disc snell absorb) k = eval
         eval (Anytime o c)  = snell k (evalO m k o, eval c)
         eval (Until o c)    = absorb k (evalO m k o, eval c)
 
-bigK :: MonadDist m => a -> m (Trace a)
+bigK :: MonadDist m => a -> Process m a
 bigK t = fmap const $ categorical [(t, 1.0)]
 
-evalO :: MonadDist m => Model m -> Currency -> Obs a -> m (Trace a)
+evalO :: MonadDist m => Model m -> Currency -> Obs a -> Process m a
 evalO m k (Konst a) = bigK a
 evalO m k (Lift f a) = (.) <$> return f <*> evalO m k a
 evalO m k (Lift2 f a b) = liftA2 f <$> evalO m k a <*> evalO m k b
@@ -63,7 +64,7 @@ max' a b t = max (a t) (b t)
 cond' :: Trace Bool -> Trace Double -> Trace Double -> Trace Double
 cond' bs xs ys t = if (bs t) then (xs t) else (ys t)
 
-instance (Num a, MonadDist m) => Num (m (Trace a)) where
+instance (Num a, MonadDist m) => Num (Process m a) where
   fromInteger i = bigK (fromInteger i)
   (+) = liftA2 (+)
   (-) = liftA2 (-)
