@@ -9,23 +9,23 @@ import Control.Monad.Bayes.Class
 
 import Contracts
 
--- value process
--- type PR m a = MonadDist m => m (Trace a)
 type Time = Int
 type Trace a = Time -> a
+-- value process
+type Process m a = m (Trace a)
 
 -- model
 data Model m  where
   Model :: MonadDist m => {
     modelStart :: Date
-      , exch :: Currency -> Currency -> m (Trace Double)
-      , disc :: Currency -> (m (Trace Bool), m (Trace Double)) -> m (Trace Double)
-      , snell :: Currency -> (m (Trace Bool), m (Trace Double)) -> m (Trace Double)
-      , absorb :: Currency -> (m (Trace Bool), m (Trace Double)) -> m (Trace Double)
+      , exch :: Currency -> Currency -> Process m Double
+      , disc :: Currency -> (Process m Bool, Process m Double) -> Process m Double
+      , snell :: Currency -> (Process m Bool, Process m Double) -> Process m Double
+      , absorb :: Currency -> (Process m Bool, Process m Double) -> Process m Double
 } -> Model m
 
 -- evaluation of contracts
-evalC :: MonadDist m => Model m -> Currency -> Contract -> m (Trace Double)
+evalC :: MonadDist m => Model m -> Currency -> Contract -> Process m Double
 evalC m@(Model modelDate exch disc snell absorb) k = eval
   where eval Zero           = bigK 0
         eval (One k2)       = exch k k2

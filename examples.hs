@@ -55,7 +55,7 @@ brc t r b k u = z `and` give (down_and_in b v o)
 -- Valuation --
 ---------------
 
-example_model :: (MonadDist m) => Date -> Model m
+example_model :: MonadDist m => Date -> Model m
 example_model d = Model {
     modelStart = d
   , exch = example_exch
@@ -64,28 +64,28 @@ example_model d = Model {
   , absorb = example_absorb
 }
 
-example_exch :: MonadDist m => Currency -> Currency -> m (Trace Double)
+example_exch :: MonadDist m => Currency -> Currency -> Process m Double
 example_exch k1 k2 | k1 == k2 = return $ \t -> 1
 example_exch k1 k2 | k2 < k1 = example_exch k2 k1
 example_exch k1 k2 = do d <- sequence $ repeat (bernoulli $ logFloat 0.5)
                         let l = map (\x -> if x then -1.0 else 1.0) d
                         return $ \t -> sum (take t l)
 
-intrest_rate :: MonadDist m => m (Trace Double)
+intrest_rate :: MonadDist m => Process m Double
 intrest_rate = do d <- sequence $ repeat (bernoulli $ logFloat 0.5)
                   let l = map (\x -> if x then -1.0 else 1.0) d
                   return $ \t -> sum (take t l)
 
-example_disc :: MonadDist m => Currency -> (m (Trace Bool), m (Trace Double)) -> m (Trace Double)
+example_disc :: MonadDist m => Currency -> (Process m Bool, Process m Double) -> Process m Double
 example_disc k (b, d) = do p1 <- d
                            p2 <- intrest_rate
                            pb <- b
                            return $ \t -> if (pb t) then (p1 t) else ((p1 t)/(1 + (p2 t)/100))
 
-example_snell :: MonadDist m => Currency -> (m (Trace Bool), m (Trace Double)) -> m (Trace Double)
+example_snell :: MonadDist m => Currency -> (Process m Bool, Process m Double) -> Process m Double
 example_snell k (b, d) = undefined
 
-example_absorb :: MonadDist m => Currency -> (m (Trace Bool), m (Trace Double)) -> m (Trace Double)
+example_absorb :: MonadDist m => Currency -> (Process m Bool, Process m Double) -> Process m Double
 example_absorb k (b, d) = undefined
 
 test :: Contract -> IO Double
