@@ -40,9 +40,7 @@ evalC m@(Model modelDate exch disc snell absorb) k = eval
         eval (Until o c)    = absorb k (evalO m k o, eval c)
 
 bigK :: MonadDist m => a -> m (Trace a)
-bigK t = do
-  d <- categorical [(t, 1.0)]
-  return $ \x -> d
+bigK t = fmap const $ categorical [(t, 1.0)]
 
 evalO :: MonadDist m => Model m -> Currency -> Obs a -> m (Trace a)
 evalO m k (Konst a) = bigK a
