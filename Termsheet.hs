@@ -14,6 +14,7 @@ import Contracts
 import Contracts.BRC
 import Currencies
 import Stocks
+import Assets
 
 stocks = fromList([(A,"bla bla A"), (B, "bla bla B"), (C, "bla bla C")])
 
