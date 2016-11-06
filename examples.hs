@@ -84,3 +84,6 @@ test12 = brc exerciseDate nominalAmount strikePrice barrier currency underlying
     barrier = 80
     currency = Currency CHF
     underlying = one $ Stock A
+
+-- generate a language specific termsheet
+run = termsheet defaultMetadata test12 DE

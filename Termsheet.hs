@@ -45,8 +45,8 @@ is_brc _ = False
 
 data Language = DE | FR | IT | EN
 
-termsheet :: Metadata -> Contract -> Language -> IO ()
-termsheet m c l | is_brc c = ppTermsheet l b
+termsheet :: Metadata -> Contract -> Language -> Termsheet
+termsheet m c l | is_brc c = toTS l b
   where b = BRC {
         valor_ = valor m
       , underlyings_ = ppUnderlyings c
@@ -56,7 +56,7 @@ termsheet m c l | is_brc c = ppTermsheet l b
 -- ppContract c | is_brc c = let b = BRC in ppTermsheet b
 
 ppTermsheet :: Termsheetable t => Language -> t -> IO ()
-ppTermsheet l = printTS . toTS
+ppTermsheet l = printTS . (toTS l)
 
 ppUnderlyings :: Contract -> [String]
 ppUnderlyings c = catMaybes $ map lookup' $ eval c
@@ -70,14 +70,37 @@ data Metadata = Metadata {
   , issuer :: String
                          } deriving (Show, Generic)
 
-printTS :: (String, String) -> IO ()
-printTS (a, b) = putStrLn a >> putStrLn b
+
+-- type Termsheet = (String, String)
+type Termsheet = [(String, [(String, String)])]
+
+printTS :: Termsheet -> IO ()
+printTS ts = mapM_ f ts
+  where f (s, t) = putStrLn s >> mapM_ g t
+        g (s, t) = putStrLn ("  " ++ s ++ ": " ++ t)
 
 class Termsheetable a where
-  toTS :: a -> (String, String)
+  toTS :: Language -> a -> Termsheet
 
 instance Termsheetable BRC where
-  toTS brc = (valor_ brc, show (underlyings_ brc))
+  toTS DE brc = [("Beschreibung", [("Valor", valor_ brc), ("Basiswerte", show (underlyings_ brc))]), ("Zusammenfassung", [("test", "test")])]
+  toTS FR brc = undefined
+  toTS IT brc = undefined
+  toTS EN brc = undefined
+
+
+-- TODO: use mustache template?
+
+
+
+
+
+
+
+
+
+
+
 
 
 
