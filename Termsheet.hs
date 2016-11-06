@@ -80,6 +80,13 @@ instance Termsheetable BRC where
   toTS brc = (valor_ brc, show (underlyings_ brc))
 
 
+
+
+
+
+
+
+
 instance FromJSON Metadata
 instance ToJSON Metadata
 
