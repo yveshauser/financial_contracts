@@ -2,6 +2,9 @@ import Contracts
 import Valuation
 import SpecialContracts
 import Termsheet
+import Currencies
+import Stocks
+import Assets
 
 import Prelude hiding (and, or)
 import Control.Monad (replicateM)

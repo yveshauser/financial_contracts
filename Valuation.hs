@@ -8,6 +8,9 @@ import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Class
 
 import Contracts
+import Assets
+import Currencies
+import Stocks
 
 type Time = Int
 type Trace a = Time -> a

@@ -2,6 +2,10 @@ module SpecialContracts where
 
 import Contracts
 import Valuation
+import Assets
+import Currencies
+import Stocks
+
 
 import Prelude hiding (and, or)
 
