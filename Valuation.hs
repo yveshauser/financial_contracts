@@ -25,11 +25,14 @@ data Model m  where
       , absorb :: Currency -> (Process m Bool, Process m Double) -> Process m Double
 } -> Model m
 
+
+
 -- evaluation of contracts
 evalC :: MonadDist m => Model m -> Currency -> Contract -> Process m Double
 evalC m@(Model modelDate exch disc snell absorb) k = eval
   where eval Zero           = bigK 0
-        eval (One k2)       = exch k k2
+        eval (One (Currency k2)) = exch k k2
+        eval (One (Stock s)) = undefined
         eval (Give c)       = -(eval c)
         eval (o `Scale` c)  = (evalO m k o) * (eval c)
         eval (c1 `And` c2)  = (eval c1) + (eval c2)

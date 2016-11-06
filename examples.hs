@@ -1,5 +1,7 @@
 import Contracts
 import Valuation
+import SpecialContracts
+import Termsheet
 
 import Prelude hiding (and, or)
 import Control.Monad (replicateM)
@@ -11,51 +13,9 @@ import System.Random
 
 import Data.Number.LogFloat (logFloat)
 
-data OptionKind = Call | Put
-
--- zero coupon bond
-zcb :: Date -> Double -> Currency -> Contract
-zcb t x k = when (at t) (scale (konst x) (one k))
-
--- european options
-european :: OptionKind -> Date -> Contract -> Contract
-european Call t u = when (at t) (u `or` zero)
-european Put t u = when (at t) (give u `or` zero)
-
--- american options
-american :: OptionKind -> (Date, Date) -> Contract -> Contract
-american Call (t1, t2) u = anytime (between t1 t2) u
-american Put (t1, t2) u = anytime (between t1 t2) (give u)
-
--- conditionals
-down_and_in :: Obs Double -> Obs Double -> Contract -> Contract
-down_and_in b u c = when (u %< b) c
-
--- 1200: discount certificate
-fxdc :: Date -> Double -> Currency -> Contract -> Contract
-fxdc t r k u = lepo `and` give (european Call t u)
-  where
-    lepo = european Call t u
-
--- 1220: reverse convertible
-rc :: Date -> Double -> Currency -> Contract -> Contract
-rc t r k u = z `and` give o
-  where
-    z = zcb t r k
-    o = european Put t u
-
--- 1230: barrier reverse convertible
-brc :: Date -> Double -> Obs Double -> Currency -> Contract -> Contract
-brc t r b k u = z `and` give (down_and_in b v o)
-  where
-    z = zcb t r k
-    o = european Put t u
-    v = value u
-
 ---------------
 -- Valuation --
 ---------------
-
 example_model :: MonadDist m => Date -> Model m
 example_model d = Model {
     modelStart = d
@@ -99,15 +59,25 @@ avg :: [Double] -> Double
 avg xs = (sum xs) / fromIntegral (length xs)
 
 test1 = test zero
-test2 = test (one CHF)
-test3 = test $ scale (konst 5) (one CHF)
-test4 = test $ zcb 0 100 CHF
-test5 = test $ zcb 100 100 CHF
-test6 = test $ european Call 0 (one CHF)
-test7 = test $ european Call 100 (one CHF)
-test8 = test $ american Call (0,0) (one CHF)
-test9 = test $ american Call (0,100) (one CHF)
+test2 = test $ chf 1
+test3 = test $ chf 5
+test4 = test $ zcb 0 100 (Currency CHF)
+test5 = test $ zcb 100 100 (Currency CHF)
+test6 = test $ european Call 0 1 (chf 1)
+test7 = test $ european Call 100 5 (chf 5)
+test8 = test $ american Call (0,0) 1 (chf 1)
+test9 = test $ american Call (0,100) 1 (chf 1)
 
-test10 = test $ brc 0 10 (konst 10.0) CHF (one CHF)
-test11 = test $ brc 100 10 (konst 10.0) CHF (one CHF)
+-- test10 = test $ brc 0 10 (konst 10.0) CHF (chf 1)
+-- test11 = tet $ brc 100 10 (konst 10.0) CHF (chf 1)
 
+-- brc example (book svsp), p.229
+test12 :: Contract
+test12 = brc exerciseDate nominalAmount strikePrice barrier currency underlying
+  where
+    exerciseDate = 365
+    nominalAmount = 1000
+    strikePrice = 100
+    barrier = 80
+    currency = Currency CHF
+    underlying = one $ Stock A

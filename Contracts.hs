@@ -1,10 +1,11 @@
-{-# LANGUAGE GADTs, RankNTypes, TypeSynonymInstances, FlexibleInstances, LiberalTypeSynonyms, IncoherentInstances #-}
+{-# LANGUAGE GADTs, RankNTypes, TypeSynonymInstances, FlexibleInstances, LiberalTypeSynonyms, IncoherentInstances, DeriveGeneric #-}
 
 module Contracts where
 
 import Prelude hiding (and, or)
 
-data Currency = CHF | EUR | USD deriving (Ord, Eq, Show)
+import Assets
+
 type Date = Int
 
 -- Primitives over observables, as defined in Figure 6.3
@@ -37,7 +38,7 @@ value = Value
 -- Primitives for defining contracts, see Figure 6.2
 data Contract
     = Zero
-    | One Currency
+    | One Asset
     | Give Contract
     | And Contract Contract
     | Or Contract Contract
@@ -50,7 +51,7 @@ data Contract
 zero :: Contract
 zero = Zero
 
-one :: Currency -> Contract
+one :: Asset -> Contract
 one = One
 
 give :: Contract -> Contract
