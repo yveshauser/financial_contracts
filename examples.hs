@@ -1,10 +1,10 @@
 import Contracts
 import Valuation
 import SpecialContracts
-import Termsheet
 import Currencies
 import Stocks
 import Assets
+import Serialization
 
 import Prelude hiding (and, or)
 import Control.Monad (replicateM)
@@ -13,6 +13,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
 
 import System.Random
+import Data.Aeson
 
 import Data.Number.LogFloat (logFloat)
 
@@ -85,5 +86,4 @@ test12 = brc exerciseDate nominalAmount strikePrice barrier currency underlying
     currency = Currency CHF
     underlying = one $ Stock A
 
--- generate a language specific termsheet
-run = termsheet defaultMetadata test12 DE
+run = encode test12
