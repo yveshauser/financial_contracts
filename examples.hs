@@ -1,10 +1,10 @@
 import Contracts
 import Valuation
-import SpecialContracts
 import Currencies
 import Stocks
 import Assets
 import Serialization
+import StructuredProducts
 
 import Prelude hiding (and, or)
 import Control.Monad (replicateM)

@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Serialization where
 
@@ -13,13 +13,12 @@ import Data.Aeson
 instance ToJSON Currency
 instance ToJSON Stock
 
-instance (ToJSON a) => ToJSON (Obs a) where
-  toJSON (Konst a) = toJSON a
-  toJSON (Lift f o) = undefined
-  toJSON (Lift2 f oa ob) = object [ ]
-  toJSON (Value c) = toJSON c
-  -- toJSON (Date) = undefined
-  toJSON _ = undefined
+instance ToJSON (Obs o) where
+  toJSON (Konst a)       = toJSON $ show a
+  toJSON (Lift f o)      = object [ "lift" .= toJSON o ]
+  toJSON (Lift2 f o1 o2) = object [ "lift2" .= object [ "o1" .= toJSON o1, "o2" .= toJSON o2 ]]
+  toJSON (Value c)       = toJSON c
+  toJSON (Date)          = undefined
 
 instance ToJSON Contract where
   toJSON Zero               = object []

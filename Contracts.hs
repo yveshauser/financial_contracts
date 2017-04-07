@@ -10,13 +10,13 @@ type Date = Int
 
 -- Primitives over observables, as defined in Figure 6.3
 data Obs a where
-    Konst :: a -> Obs a
+    Konst :: (Show a) => a -> Obs a
     Lift :: (a -> b) -> Obs a -> Obs b
     Lift2 :: (a -> b -> c) -> Obs a -> Obs b -> Obs c
-    Date :: Obs Date
+    Date :: Obs Date -- FIXME: how?
     Value :: Contract -> Obs Double
 
-konst :: a -> Obs a
+konst :: (Show a) => a -> Obs a
 konst a = Konst a
 
 lift :: (a -> b) -> Obs a -> Obs b
@@ -78,7 +78,15 @@ anytime = Anytime
 until :: Obs Bool -> Contract -> Contract
 until = Until
 
-instance Num a => Num (Obs a)
+instance Show (Obs a)
+  where
+    show (Konst a) = show a
+    show (Lift f o) = show "lift: " ++ show o
+    show (Lift2 f o1 o2) = show "lift2: " ++ show o1 ++ show o2
+    --show (Value c) = show c
+    show (Date) = undefined
+
+instance (Num a, Show a) => Num (Obs a)
   where
     fromInteger i = konst (fromInteger i)
     (+) = lift2 (+)
