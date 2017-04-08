@@ -4,13 +4,13 @@ module Contracts where
 
 import Prelude hiding (and, or)
 
+import Assets
+
 import Data.Aeson
 import Data.Time
 
-import Assets
-
--- copied from netrium
 type Time = UTCTime
+
 mkdate :: Integer -> Int -> Int -> Time
 mkdate y m d = UTCTime (fromGregorian y m d) 0
 
