@@ -1,20 +1,28 @@
-{-# LANGUAGE GADTs, RankNTypes, TypeSynonymInstances, FlexibleInstances, LiberalTypeSynonyms, IncoherentInstances, DeriveGeneric #-}
+{-# LANGUAGE GADTs, RankNTypes, TypeSynonymInstances, FlexibleInstances, LiberalTypeSynonyms, IncoherentInstances, DeriveGeneric, OverloadedStrings #-}
 
 module Contracts where
 
 import Prelude hiding (and, or)
 
+import Data.Aeson
+import Data.Time
+
 import Assets
 
-type Date = Int
+-- copied from netrium
+type Time = UTCTime
+mkdate :: Integer -> Int -> Int -> Time
+mkdate y m d = UTCTime (fromGregorian y m d) 0
 
 -- Primitives over observables, as defined in Figure 6.3
 data Obs a where
-    Konst :: (Show a) => a -> Obs a
-    Lift :: (a -> b) -> Obs a -> Obs b
-    Lift2 :: (a -> b -> c) -> Obs a -> Obs b -> Obs c
-    Date :: Obs Date -- FIXME: how?
-    Value :: Contract -> Obs Double
+    Konst  :: (Show a) => a -> Obs a
+    Lift   :: (a -> b) -> Obs a -> Obs b
+    Lift2  :: (a -> b -> c) -> Obs a -> Obs b -> Obs c
+    At     :: Time -> Obs Bool
+    After  :: Time -> Obs Bool
+    Before :: Time -> Obs Bool
+    Value  :: Contract -> Obs Double
 
 konst :: (Show a) => a -> Obs a
 konst a = Konst a
@@ -25,12 +33,17 @@ lift = Lift
 lift2 :: (a -> b -> c) -> Obs a -> Obs b -> Obs c
 lift2 = Lift2
 
-date :: Obs Date
-date = Date
+at :: Time -> Obs Bool
+at = At
 
-at :: Date -> Obs Bool
--- at t = lift2 (==) date (konst t)
-at t = lift2 (==) 0 (konst t)
+before :: Time -> Obs Bool
+before = Before
+
+after :: Time -> Obs Bool
+after = After
+
+between :: Time -> Time -> Obs Bool
+between t1 t2 = (after t1) %&& (before t2)
 
 value :: Contract -> Obs Double
 value = Value
@@ -47,6 +60,7 @@ data Contract
     | When (Obs Bool) Contract
     | Anytime (Obs Bool) Contract
     | Until (Obs Bool) Contract
+    deriving (Show)
 
 zero :: Contract
 zero = Zero
@@ -80,11 +94,13 @@ until = Until
 
 instance Show (Obs a)
   where
-    show (Konst a) = show a
-    show (Lift f o) = show "lift: " ++ show o
-    show (Lift2 f o1 o2) = show "lift2: " ++ show o1 ++ show o2
-    --show (Value c) = show c
-    show (Date) = undefined
+    show (Konst a)       = show a
+    show (Lift _ o)      = "lift: " ++ show o
+    show (Lift2 _ o1 o2) = "lift2: " ++ show o1 ++ ", " ++ show o2
+    show (Value c)       = "value: " ++ show c
+    show (At t)          = "at: " ++ show t
+    show (Before t)      = "before: " ++ show t
+    show (After t)       = "after: " ++ show t
 
 instance (Num a, Show a) => Num (Obs a)
   where
@@ -95,6 +111,7 @@ instance (Num a, Show a) => Num (Obs a)
     abs = lift abs
     signum = lift signum
 
+(%&&) :: Obs Bool -> Obs Bool -> Obs Bool
 (%<), (%<=), (%==), (%>), (%>=) :: Ord a => Obs a -> Obs a -> Obs Bool
 (%<)  = lift2 (<)
 (%<=) = lift2 (<=)
@@ -103,5 +120,24 @@ instance (Num a, Show a) => Num (Obs a)
 (%>=) = lift2 (>=)
 (%&&) = lift2 (&&)
 
-between :: Date -> Date -> Obs Bool
-between t1 t2 = (date %>= konst t1) %&& (date %<= konst t2)
+instance ToJSON (Obs o) where
+  toJSON (Konst a)       = toJSON $ show a
+  toJSON (Lift _ o)      = object [ "lift" .= toJSON o ]
+  toJSON (Lift2 _ o1 o2) = object [ "lift2" .= object [ "o1" .= toJSON o1, "o2" .= toJSON o2 ]]
+  toJSON (Value c)       = object [ "value" .= toJSON c ]
+  toJSON (At t)          = object [ "at" .= toJSON t ]
+  toJSON (Before t)      = object [ "before" .= toJSON t ]
+  toJSON (After t)       = object [ "when" .= toJSON t ]
+
+instance ToJSON Contract where
+  toJSON Zero               = object []
+  toJSON (One (Currency k)) = object [ "curr" .= k ]
+  toJSON (One (Stock s))    = object [ "stock" .= s ]
+  toJSON (Give c)           = object [ "give" .= toJSON c ]
+  toJSON (o `Scale` c)      = object [ "factor" .= o, "scale" .= toJSON c ]
+  toJSON (c1 `And` c2)      = object [ "and" .= object [ "c1" .= toJSON c1, "c2" .= toJSON c2 ]]
+  toJSON (c1 `Or` c2)       = object [ "or" .= object [ "c1" .= toJSON c1, "c2" .= toJSON c2 ]]
+  toJSON (Cond o c1 c2)     = object [ "cond" .= o, "do" .= object [ "c1" .= toJSON c1, "c2" .= toJSON c2 ]]
+  toJSON (When o c)         = object [ "when" .= o, "do" .= toJSON c ]
+  toJSON (Anytime o c)      = object [ "anytime" .= o, "do" .= toJSON c ]
+  toJSON (Until o c)        = object [ "until" .= o, "do" .= toJSON c ]

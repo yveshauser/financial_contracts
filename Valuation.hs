@@ -12,8 +12,8 @@ import Assets
 import Currencies
 import Stocks
 
-type Time = Int
-type Trace a = Time -> a
+--type Time = Int
+type Trace a = Int -> a
 
 -- value process
 type Process m a = m (Trace a)
@@ -21,7 +21,7 @@ type Process m a = m (Trace a)
 -- model
 data Model m  where
   Model :: MonadDist m => {
-    modelStart :: Date
+    modelStart :: Time
       , exch   :: Currency -> Currency -> Process m Double
       , disc   :: Currency -> (Process m Bool, Process m Double) -> Process m Double
       , snell  :: Currency -> (Process m Bool, Process m Double) -> Process m Double
@@ -49,7 +49,9 @@ evalO :: MonadDist m => Model m -> Currency -> Obs a -> Process m a
 evalO m k (Konst a)     = bigK a
 evalO m k (Lift f a)    = (.) <$> return f <*> evalO m k a
 evalO m k (Lift2 f a b) = liftA2 f <$> evalO m k a <*> evalO m k b
-evalO m k (Date)        = return id
+evalO m k (At t)        = undefined
+evalO m k (Before t)    = undefined
+evalO m k (After t)     = undefined
 evalO m k (Value c)     = evalC m k c
 
 instance Num a => Num (Trace a) where

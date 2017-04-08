@@ -20,7 +20,7 @@ import Data.Number.LogFloat (logFloat)
 ---------------
 -- Valuation --
 ---------------
-example_model :: MonadDist m => Date -> Model m
+example_model :: MonadDist m => Time -> Model m
 example_model d = Model {
     modelStart = d
   , exch = example_exch
@@ -57,20 +57,25 @@ test :: Contract -> IO Double
 test c = do g <- newStdGen
             let tr = sample (replicateM 10000 test) g
             return $ avg $ map ($10) tr
-  where test = evalC (example_model 0) CHF c
+  where test = evalC (example_model t0) CHF c
 
 avg :: [Double] -> Double
 avg xs = (sum xs) / fromIntegral (length xs)
 
+t0, t1 :: Time
+t0 = mkdate 2017 1 1
+t1 = mkdate 2017 7 1
+
+test1, test2, test3, test4, test5, test6, test7, test8, test9 :: IO Double
 test1 = test zero
 test2 = test $ chf 1
 test3 = test $ chf 5
-test4 = test $ zcb 0 100 (Currency CHF)
-test5 = test $ zcb 100 100 (Currency CHF)
-test6 = test $ european Call 0 1 (chf 1)
-test7 = test $ european Call 100 5 (chf 5)
-test8 = test $ american Call (0,0) 1 (chf 1)
-test9 = test $ american Call (0,100) 1 (chf 1)
+test4 = test $ zcb t0 100 (Currency CHF)
+test5 = test $ zcb t1 100 (Currency CHF)
+test6 = test $ european Call t0 1 (chf 1)
+test7 = test $ european Call t1 5 (chf 5)
+test8 = test $ american Call (t0,t0) 1 (chf 1)
+test9 = test $ american Call (t0,t1) 1 (chf 1)
 
 -- test10 = test $ brc 0 10 (konst 10.0) CHF (chf 1)
 -- test11 = tet $ brc 100 10 (konst 10.0) CHF (chf 1)
@@ -79,7 +84,7 @@ test9 = test $ american Call (0,100) 1 (chf 1)
 test12 :: Contract
 test12 = brc exerciseDate nominalAmount strikePrice barrier currency underlying
   where
-    exerciseDate = 365
+    exerciseDate = t1
     nominalAmount = 1000
     strikePrice = 100
     barrier = 80

@@ -3,22 +3,25 @@
 
 module Serialization where
 
-import Contracts
-import Stocks
-import Currencies
-import Assets
+--import Contracts
+--import Stocks
+--import Currencies
+--import Assets
 
-import Data.Aeson
+--import Data.Aeson
 
-instance ToJSON Currency
-instance ToJSON Stock
+-- instance ToJSON Currency
+-- instance ToJSON Stock
 
+{-#
 instance ToJSON (Obs o) where
   toJSON (Konst a)       = toJSON $ show a
-  toJSON (Lift f o)      = object [ "lift" .= toJSON o ]
-  toJSON (Lift2 f o1 o2) = object [ "lift2" .= object [ "o1" .= toJSON o1, "o2" .= toJSON o2 ]]
-  toJSON (Value c)       = toJSON c
-  toJSON (Date)          = undefined
+  toJSON (Lift _ o)      = object [ "lift" .= toJSON o ]
+  toJSON (Lift2 _ o1 o2) = object [ "lift2" .= object [ "o1" .= toJSON o1, "o2" .= toJSON o2 ]]
+  toJSON (Value c)       = object [ "value" .= toJSON c ]
+  toJSON (At t)          = object [ "at" .= toJSON t ]
+  toJSON (Before t)      = object [ "before" .= toJSON t ]
+  toJSON (After t)       = object [ "when" .= toJSON t ]
 
 instance ToJSON Contract where
   toJSON Zero               = object []
@@ -32,3 +35,4 @@ instance ToJSON Contract where
   toJSON (When o c)         = object [ "when" .= o, "do" .= toJSON c ]
   toJSON (Anytime o c)      = object [ "anytime" .= o, "do" .= toJSON c ]
   toJSON (Until o c)        = object [ "until" .= o, "do" .= toJSON c ]
+#-}
