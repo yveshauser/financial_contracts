@@ -4,12 +4,10 @@ module Valuation where
 
 import Prelude hiding (and, or)
 import Control.Applicative (liftA2, liftA3)
-import Control.Monad.Bayes.Simple
---import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Class
 
 import Contracts
--- import Assets
+import Assets
 
 --type Time = Int
 -- type Trace a = Time -> a
@@ -20,7 +18,7 @@ type Process m a = m (Trace a)
 
 -- model
 data Model m  where
-  Model :: MonadDist m => {
+  Model :: MonadInfer m => {
     modelStart :: Time
       , stock  :: Stock -> Process m Double
       --, exch   :: Currency -> Currency -> Process m Double
@@ -30,11 +28,10 @@ data Model m  where
 } -> Model m
 
 -- evaluation of contracts
-evalC :: MonadDist m => Model m -> Currency -> Contract -> Process m Double
+evalC :: MonadInfer m => Model m -> Currency -> Contract -> Process m Double
 evalC m@(Model modelDate stock disc snell absorb) k = eval
   where eval Zero                = bigK 0
-        -- eval (One (Currency k2)) = exch k k2
-        eval (One (Stock s))     = stock s
+        eval One                 = bigK 1
         eval (Give c)            = -(eval c)
         eval (o `Scale` c)       = (evalO m k o) * (eval c)
         eval (c1 `And` c2)       = (eval c1) + (eval c2)
@@ -44,7 +41,7 @@ evalC m@(Model modelDate stock disc snell absorb) k = eval
         eval (Anytime o c)       = snell k (evalO m k o, eval c)
         eval (Until o c)         = absorb k (evalO m k o, eval c)
 
-evalO :: MonadDist m => Model m -> Currency -> Obs a -> Process m a
+evalO :: MonadInfer m => Model m -> Currency -> Obs a -> Process m a
 evalO m k (Konst a)     = bigK a
 evalO m k (Lift f a)    = (.) <$> return f <*> evalO m k a
 evalO m k (Lift2 f a b) = liftA2 f <$> evalO m k a <*> evalO m k b
@@ -62,7 +59,7 @@ instance Num a => Num (Trace a) where
   signum a t      = signum (a t)
   negate a t      = negate (a t)
 
-instance (Num a, MonadDist m) => Num (Process m a) where
+instance (Num a, MonadInfer m) => Num (Process m a) where
   fromInteger i = bigK (fromInteger i)
   (+)           = liftA2 (+)
   (-)           = liftA2 (-)
@@ -70,8 +67,8 @@ instance (Num a, MonadDist m) => Num (Process m a) where
   abs           = fmap abs
   signum        = fmap signum
 
-bigK :: MonadDist m => a -> Process m a
-bigK t = fmap const $ categorical [(t, 1.0)]
+bigK :: MonadInfer m => a -> Process m a
+bigK t = undefined -- FIXME: fmap const $ categorical t
 
 max' :: Ord a => Trace a -> Trace a -> Trace a
 max' a b t = max (a t) (b t)

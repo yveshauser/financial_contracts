@@ -31,7 +31,7 @@ down_and_in :: Double     -- ^ Barrier
 down_and_in b u = when ((value u) %< (konst b))
 
 -- | Down-and-Out Options
-down_and_out :: Double     -- ^ Barrier
+down_and_out :: Double    -- ^ Barrier
             -> Contract   -- ^ Underlying
             -> Contract   -- ^ Contract
             -> Contract   -- ^ Conditional Contract
