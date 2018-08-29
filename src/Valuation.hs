@@ -4,13 +4,10 @@ module Valuation where
 
 import Prelude hiding (and, or)
 import Control.Applicative (liftA2, liftA3)
-import Control.Monad.Bayes.Class
 
 import Contracts
 import Assets
 
---type Time = Int
--- type Trace a = Time -> a
 type Trace a = Double -> a
 
 -- value process
@@ -18,7 +15,7 @@ type Process m a = m (Trace a)
 
 -- model
 data Model m  where
-  Model :: MonadInfer m => {
+  Model :: Applicative m => {
     modelStart :: Time
       , stock  :: Stock -> Process m Double
       --, exch   :: Currency -> Currency -> Process m Double
@@ -28,7 +25,7 @@ data Model m  where
 } -> Model m
 
 -- evaluation of contracts
-evalC :: MonadInfer m => Model m -> Currency -> Contract -> Process m Double
+evalC :: Applicative m => Model m -> Currency -> Contract -> Process m Double
 evalC m@(Model modelDate stock disc snell absorb) k = eval
   where eval Zero                = bigK 0
         eval One                 = bigK 1
@@ -41,13 +38,13 @@ evalC m@(Model modelDate stock disc snell absorb) k = eval
         eval (Anytime o c)       = snell k (evalO m k o, eval c)
         eval (Until o c)         = absorb k (evalO m k o, eval c)
 
-evalO :: MonadInfer m => Model m -> Currency -> Obs a -> Process m a
+evalO :: Applicative m => Model m -> Currency -> Obs a -> Process m a
 evalO m k (Konst a)     = bigK a
-evalO m k (Lift f a)    = (.) <$> return f <*> evalO m k a
+evalO m k (Lift f a)    = (.) <$> pure f <*> evalO m k a
 evalO m k (Lift2 f a b) = liftA2 f <$> evalO m k a <*> evalO m k b
-evalO m k (At t)        = return (t==)
-evalO m k (Before t)    = return (t<)
-evalO m k (After t)     = return (t>)
+evalO m k (At t)        = pure (t==)
+evalO m k (Before t)    = pure (t<)
+evalO m k (After t)     = pure (t>)
 evalO m k (Value c)     = evalC m k c
 
 instance Num a => Num (Trace a) where
@@ -59,7 +56,7 @@ instance Num a => Num (Trace a) where
   signum a t      = signum (a t)
   negate a t      = negate (a t)
 
-instance (Num a, MonadInfer m) => Num (Process m a) where
+instance (Num a, Applicative m) => Num (Process m a) where
   fromInteger i = bigK (fromInteger i)
   (+)           = liftA2 (+)
   (-)           = liftA2 (-)
@@ -67,8 +64,8 @@ instance (Num a, MonadInfer m) => Num (Process m a) where
   abs           = fmap abs
   signum        = fmap signum
 
-bigK :: MonadInfer m => a -> Process m a
-bigK t = undefined -- FIXME: fmap const $ categorical t
+bigK :: Applicative m => a -> Process m a
+bigK t = const <$> pure t
 
 max' :: Ord a => Trace a -> Trace a -> Trace a
 max' a b t = max (a t) (b t)
