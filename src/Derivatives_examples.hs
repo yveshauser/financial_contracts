@@ -55,4 +55,3 @@ brc_example = brc term nominal strike barrier underlying
 
 main :: IO ()
 main = L.putStr $ encode rc_example
-

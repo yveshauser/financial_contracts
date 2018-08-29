@@ -6,7 +6,6 @@ import Prelude hiding (and, or)
 import Data.Aeson
 import Data.Time
 
---type Time = UTCTime
 type Time = Double
 
 -- Primitives for defining contracts, see Figure 6.2

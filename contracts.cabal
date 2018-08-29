@@ -16,8 +16,11 @@ library
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bytestring
+                     , logfloat
                      , text
                      , time
                      , random
                      , monad-bayes
-
+                     , mtl
+                     , transformers
+                     , mwc-random
