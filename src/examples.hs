@@ -18,28 +18,21 @@ import Data.Aeson
 ---------------
 -- Valuation --
 ---------------
-example_stock :: MonadInfer m => Stock -> Process m Double
-example_stock _ = undefined
-
 std_normal :: MonadInfer m => Process m Double
-std_normal = do x <- normal 0 1
-                return $ \t -> x
+std_normal = normal 0 1 >>= return . const
 
-{-
 wiener :: MonadInfer m => Int -> Process m Double
 wiener 0 = std_normal
-wiener n = (wiener $ n-1) + std_normal
+wiener n = wiener (n-1) + std_normal
 
 brownian :: MonadInfer m => Process m Double
---brownian w = normal 0 1 >>= \n -> return (\dt -> w + n * sqrt dt) -- FIXME: dt as seconds
-brownian = iterateM (\dt -> do
-  n <- normal 0 1
-  return (0 + n * sqrt dt)) 0
+brownian = iterateM (\dt -> normal 0 1 >>= \n -> return (0 + n * sqrt dt)) 0
 
 iterateM :: Monad m => (a -> m a) -> a -> m b
 iterateM f = g
     where g x = f x >>= g
 
+{-
 --testxx :: IO Double
 testxx = do g <- newStdGen
             let step = fmap coin $ bernoulli 0.5
@@ -54,6 +47,9 @@ coin :: Bool -> Int
 coin True = 1
 coin False = -1
 
+example_stock :: MonadInfer m => Stock -> Process m Double
+example_stock _ = undefined
+
 example_model :: MonadInfer m => Time -> Model m
 example_model d = Model {
     modelStart = d
@@ -63,12 +59,6 @@ example_model d = Model {
   , snell = undefined
   , absorb = undefined
 }
-
-{-
-brownian :: MonadInfer m => Process m Double
-brownian = iterate 0 $ \w t dt -> do
-      n <- normal
-      return (w + n * sqrt dt)
 
 example_stock :: MonadInfer m => Stock -> Process m Double
 example_stock _ = do d <- sequence $ repeat (bernoulli $ logFloat 0.5)
@@ -98,8 +88,6 @@ example_snell _  = undefined
 
 example_absorb :: MonadInfer m => Currency -> (Process m Bool, Process m Double) -> Process m Double
 example_absorb _ = undefined
-
--}
 
 test :: Time -> Contract -> IO Double
 test t c = do g <- newStdGen
