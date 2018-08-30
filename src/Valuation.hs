@@ -12,35 +12,37 @@ type Trace a = Double -> a
 type Process m a = m (Trace a)
 
 -- model
-data Model m  where
+data Model m where
   Model :: Applicative m => {
-        disc   :: (Process m Bool, Process m Double) -> Process m Double
-      , snell  :: (Process m Bool, Process m Double) -> Process m Double
-      , absorb :: (Process m Bool, Process m Double) -> Process m Double
+    modelStart :: Time
+      , exch   :: Currency -> Currency -> Process m Double
+      , disc   :: Currency -> (Process m Bool, Process m Double) -> Process m Double
+      , snell  :: Currency -> (Process m Bool, Process m Double) -> Process m Double
+      , absorb :: Currency -> (Process m Bool, Process m Double) -> Process m Double
 } -> Model m
 
 -- evaluation of contracts
-evalC :: Applicative m => Model m -> Contract -> Process m Double
-evalC m@(Model disc snell absorb) = eval
+evalC :: Applicative m => Model m -> Currency -> Contract -> Process m Double
+evalC m@(Model _ exch disc snell absorb) k = eval
   where eval Zero                = bigK 0
-        eval One                 = bigK 1
+        eval (One k1)            = exch k k1
         eval (Give c)            = -(eval c)
-        eval (o `Scale` c)       = (evalO m o) * (eval c)
+        eval (o `Scale` c)       = (evalO m k o) * (eval c)
         eval (c1 `And` c2)       = (eval c1) + (eval c2)
         eval (c1 `Or` c2)        = liftA2 max' (eval c1) (eval c2)
-        eval (Cond o c1 c2)      = liftA3 cond' (evalO m o) (eval c1) (eval c2)
-        eval (When o c)          = disc (evalO m o, eval c)
-        eval (Anytime o c)       = snell (evalO m o, eval c)
-        eval (Until o c)         = absorb (evalO m o, eval c)
+        eval (Cond o c1 c2)      = liftA3 cond' (evalO m k o) (eval c1) (eval c2)
+        eval (When o c)          = disc k (evalO m k o, eval c)
+        eval (Anytime o c)       = snell k (evalO m k o, eval c)
+        eval (Until o c)         = absorb k (evalO m k o, eval c)
 
-evalO :: Applicative m => Model m -> Obs a -> Process m a
-evalO m (Konst a)     = bigK a
-evalO m (Lift f a)    = (.) <$> pure f <*> evalO m a
-evalO m (Lift2 f a b) = liftA2 f <$> evalO m a <*> evalO m b
-evalO m (At t)        = pure (t==)
-evalO m (Before t)    = pure (t<)
-evalO m (After t)     = pure (t>)
-evalO m (Value c)     = evalC m c
+evalO :: Applicative m => Model m -> Currency -> Obs a -> Process m a
+evalO m k (Konst a)     = bigK a
+evalO m k (Lift f a)    = (.) <$> pure f <*> evalO m k a
+evalO m k (Lift2 f a b) = liftA2 f <$> evalO m k a <*> evalO m k b
+evalO m k (At t)        = pure (t==)
+evalO m k (Before t)    = pure (t<)
+evalO m k (After t)     = pure (t>)
+evalO m k (Value c)     = evalC m k c
 
 instance Num a => Num (Trace a) where
   fromInteger i t = fromInteger i

@@ -7,11 +7,12 @@ import Data.Aeson
 import Data.Time
 
 type Time = Double
+data Currency = CHF | EUR | USD deriving (Ord, Eq, Show)
 
 -- Primitives for defining contracts, see Figure 6.2
 data Contract
     = Zero
-    | One
+    | One Currency
     | Give Contract
     | And Contract Contract
     | Or Contract Contract
@@ -59,7 +60,7 @@ between t1 t2 = (after t1) %&& (before t2)
 zero :: Contract
 zero = Zero
 
-one :: Contract
+one :: Currency -> Contract
 one = One
 
 give :: Contract -> Contract
@@ -89,8 +90,8 @@ until = Until
 times :: Double -> Contract -> Contract
 times = scale . konst
 
-amount :: Double -> Contract
-amount n = times n one
+amount :: Double -> Currency -> Contract
+amount n k = times n (one k)
 
 short :: Contract -> Contract
 short = give
@@ -137,7 +138,7 @@ instance ToJSON (Obs o) where
 
 instance ToJSON Contract where
   toJSON Zero           = object []
-  toJSON One            = object [ "value"   .= (1 :: Integer) ]
+  toJSON (One k)        = object [ "value"   .= (1 :: Integer) ]
   toJSON (Give c)       = object [ "give"    .= toJSON c ]
   toJSON (o `Scale` c)  = object [ "factor"  .= o, "scale" .= toJSON c ]
   toJSON (c1 `And` c2)  = object [ "and"     .= object [ "c1" .= toJSON c1, "c2" .= toJSON c2 ]]
