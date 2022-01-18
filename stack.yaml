@@ -1,5 +1,0 @@
-resolver: nightly-2018-04-14
-
-extra-deps:
-  - git: https://github.com/adscib/monad-bayes
-    commit: 87b952a94fc4049c32ce519489886959f84243fb
