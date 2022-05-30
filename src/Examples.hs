@@ -26,10 +26,7 @@ wiener = normal 0 1 >>= (return . (!!) . scanl1 (+)) . repeat
 geometric_brownian_motion :: MonadSample m => Double -> Double -> Double -> Process m Double
 geometric_brownian_motion μ σ s_0 = do
   w_t <- wiener
-  return $ (\t -> s_0 * exp (μ-(σ*σ)/2) * int2Double t) + scaleTrace σ w_t
-
-scaleTrace :: Double -> Trace Double -> Trace Double
-scaleTrace s t = const s * t
+  return $ (\t -> s_0 * exp (μ-(σ*σ)/2) * int2Double t) + (const σ * w_t)
 
 example_model :: MonadSample m => Model m
 example_model = Model {
