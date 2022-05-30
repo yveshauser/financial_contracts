@@ -9,8 +9,8 @@ import Contracts
 type Trace a = Time -> a
 
 instance Num (Trace Double) where
-  f1 + f2 = \t -> f1 t + f2 t
-  f1 * f2 = \t -> f1 t * f2 t
+  f1 + f2 = (+) <$> f1 <*> f2
+  f1 * f2 = (*) <$> f1 <*> f2
   abs f = abs . f
   signum f = signum . f
   negate f = negate . f
