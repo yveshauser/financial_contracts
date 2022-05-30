@@ -46,24 +46,24 @@ evalO m k (After t)     = pure (t>)
 evalO m k (Value c)     = evalC m k c
 
 instance Num a => Num (Trace a) where
-  fromInteger i t = fromInteger i
-  (+) a b t       = a t + b t
-  (-) a b t       = a t - b t
-  (*) a b t       = a t * b t
-  abs a t         = abs (a t)
-  signum a t      = signum (a t)
-  negate a t      = negate (a t)
+  fromInteger = const . fromInteger
+  (+) a b t   = a t + b t
+  (-) a b t   = a t - b t
+  (*) a b t   = a t * b t
+  abs a t     = abs (a t)
+  signum a t  = signum (a t)
+  negate a t  = negate (a t)
 
 instance (Num a, Applicative m) => Num (Process m a) where
-  fromInteger i = bigK (fromInteger i)
-  (+)           = liftA2 (+)
-  (-)           = liftA2 (-)
-  (*)           = liftA2 (*)
-  abs           = fmap abs
-  signum        = fmap signum
+  fromInteger = bigK . fromInteger
+  (+)         = liftA2 (+)
+  (-)         = liftA2 (-)
+  (*)         = liftA2 (*)
+  abs         = fmap abs
+  signum      = fmap signum
 
 bigK :: Applicative m => a -> Process m a
-bigK t = pure (const t)
+bigK = pure . const
 
 max' :: Ord a => Trace a -> Trace a -> Trace a
 max' a b t = max (a t) (b t)
