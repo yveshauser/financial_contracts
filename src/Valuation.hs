@@ -14,7 +14,7 @@ instance Num (Trace Double) where
   abs f = abs . f
   signum f = signum . f
   negate f = negate . f
-  fromInteger i = const $ fromInteger i
+  fromInteger = const . fromInteger
 
 -- value process
 type Process m a = m (Trace a)
