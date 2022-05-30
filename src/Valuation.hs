@@ -6,15 +6,8 @@ import Control.Applicative (liftA2, liftA3)
 
 import Contracts
 
+-- trace
 type Trace a = Time -> a
-
-instance Num (Trace Double) where
-  f1 + f2 = (+) <$> f1 <*> f2
-  f1 * f2 = (*) <$> f1 <*> f2
-  abs f = abs . f
-  signum f = signum . f
-  negate f = negate . f
-  fromInteger = const . fromInteger
 
 -- value process
 type Process m a = m (Trace a)
