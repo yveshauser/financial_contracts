@@ -1,3 +1,5 @@
+module Derivatives_examples where
+
 import Prelude hiding (and, or)
 import Data.Aeson
 import qualified Data.ByteString.Lazy as L
@@ -5,13 +7,15 @@ import qualified Data.ByteString.Lazy as L
 import Contracts
 import Derivatives
 
+{-# ANN module "HLint: ignore Use camelCase" #-}
+
 -- dc example, p.196
 -- value(dc_example, t0) = 98 - 4 + 1 = 95
 dc_example :: Contract
 dc_example = with_costs 1 $ dc term strike underlying
   where
     costs = 1
-    term = 125.00 -- 0.5y
+    term = 125 -- 0.5y
     strike = 105
     underlying = amount 100 CHF
 
@@ -21,7 +25,7 @@ bdc_example :: Contract
 bdc_example = with_costs 2 $ bdc term strike barrier underlying
   where
     costs = 1
-    term = 125.00 -- 0.5y
+    term = 125 -- 0.5y
     strike = 105
     underlying = amount 105 CHF
     barrier = 80
@@ -35,7 +39,7 @@ rc_example :: Contract
 rc_example = with_costs costs $ rc term nominal coupon ratio strike underlying
   where
     costs = 23.5
-    term = 250.00 -- 1y
+    term = 250 -- 1y
     nominal = 1000
     coupon = 0.12
     strike = 100
@@ -46,7 +50,7 @@ rc_example = with_costs costs $ rc term nominal coupon ratio strike underlying
 brc_example :: Contract
 brc_example = brc term nominal strike barrier underlying
   where
-    term = 100.00 -- mkdate 2018 1 1
+    term = 100 -- mkdate 2018 1 1
     nominal = 1000
     strike = 100
     barrier = 80

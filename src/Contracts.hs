@@ -6,7 +6,7 @@ import Prelude hiding (and, or)
 import Data.Aeson
 import Data.Time
 
-type Time = Double
+type Time = Int
 data Currency = CHF | EUR | USD deriving (Ord, Eq, Show)
 
 -- Primitives for defining contracts, see Figure 6.2
@@ -34,7 +34,7 @@ data Obs a where
     Value  :: Contract -> Obs Double
 
 konst :: (Show a) => a -> Obs a
-konst a = Konst a
+konst = Konst
 
 lift :: (a -> b) -> Obs a -> Obs b
 lift = Lift
@@ -55,7 +55,7 @@ value :: Contract -> Obs Double
 value = Value
 
 between :: Time -> Time -> Obs Bool
-between t1 t2 = (after t1) %&& (before t2)
+between t1 t2 = after t1 %&& before t2
 
 zero :: Contract
 zero = Zero

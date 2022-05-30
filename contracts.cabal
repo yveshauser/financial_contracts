@@ -11,9 +11,10 @@ library
   hs-source-dirs:      src
   exposed-modules:     Contracts
                      , Derivatives
+                     , Derivatives_examples
                      , Examples
                      , Valuation
-  build-depends:       base >=4.11 && <4.14
+  build-depends:       base >=4.11 && <4.17
                      , aeson
                      , bytestring
                      , logfloat

@@ -6,7 +6,15 @@ import Control.Applicative (liftA2, liftA3)
 
 import Contracts
 
-type Trace a = Double -> a
+type Trace a = Time -> a
+
+instance Num (Trace Double) where
+  f1 + f2 = \t -> f1 t + f2 t
+  f1 * f2 = \t -> f1 t * f2 t
+  abs f = abs . f
+  signum f = signum . f
+  negate f = negate . f
+  fromInteger i = const $ fromInteger i
 
 -- value process
 type Process m a = m (Trace a)
@@ -27,8 +35,8 @@ evalC m@(Model _ exch disc snell absorb) k = eval
   where eval Zero                = bigK 0
         eval (One k1)            = exch k k1
         eval (Give c)            = -(eval c)
-        eval (o `Scale` c)       = (evalO m k o) * (eval c)
-        eval (c1 `And` c2)       = (eval c1) + (eval c2)
+        eval (o `Scale` c)       = evalO m k o * eval c
+        eval (c1 `And` c2)       = eval c1 + eval c2
         eval (c1 `Or` c2)        = liftA2 max' (eval c1) (eval c2)
         eval (Cond o c1 c2)      = liftA3 cond' (evalO m k o) (eval c1) (eval c2)
         eval (When o c)          = disc k (evalO m k o, eval c)
@@ -37,7 +45,7 @@ evalC m@(Model _ exch disc snell absorb) k = eval
 
 evalO :: Applicative m => Model m -> Currency -> Obs a -> Process m a
 evalO m k (Konst a)     = bigK a
-evalO m k (Lift f a)    = (.) <$> pure f <*> evalO m k a
+evalO m k (Lift f a)    = (.) f <$> evalO m k a
 evalO m k (Lift2 f a b) = liftA2 f <$> evalO m k a <*> evalO m k b
 evalO m k (At t)        = pure (t==)
 evalO m k (Before t)    = pure (t<)
@@ -62,10 +70,10 @@ instance (Num a, Applicative m) => Num (Process m a) where
   signum        = fmap signum
 
 bigK :: Applicative m => a -> Process m a
-bigK t = const <$> pure t
+bigK t = pure (const t)
 
 max' :: Ord a => Trace a -> Trace a -> Trace a
 max' a b t = max (a t) (b t)
 
 cond' :: Trace Bool -> Trace Double -> Trace Double -> Trace Double
-cond' bs xs ys t = if (bs t) then (xs t) else (ys t)
+cond' bs xs ys t = if bs t then xs t else ys t

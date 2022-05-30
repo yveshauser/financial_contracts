@@ -3,14 +3,22 @@ module Derivatives where
 import Prelude hiding (and, or)
 import Contracts
 
+{-# ANN module "HLint: ignore Use camelCase" #-}
+
 cur :: Currency -> Double -> Contract
 cur k o = scale (konst o) (one k)
 
 chf :: Double -> Contract
 chf = cur CHF
 
+eur :: Double -> Contract
+eur = cur EUR
+
 one_chf :: Contract
 one_chf = chf 1.0
+
+one_eur :: Contract
+one_eur = eur 1.0
 
 data OptionKind = Call | Put
 
@@ -21,7 +29,7 @@ european :: OptionKind -- ^ Kind of Option
          -> Contract   -- ^ Underlying Asset
          -> Contract   -- ^ European Option Contract
 european Call t s u = when (at t) $ (u `and` give (times s one_chf)) `or` zero
-european Put  t s u = when (at t) $ (give u `and` (times s one_chf)) `or` zero
+european Put  t s u = when (at t) $ (give u `and`  times s one_chf ) `or` zero
 
 -- | American Options
 american :: OptionKind   -- ^ Kind of Option
@@ -30,21 +38,21 @@ american :: OptionKind   -- ^ Kind of Option
          -> Contract     -- ^ Underlying Asset
          -> Contract     -- ^ American Option Contract
 american Call (t1, t2) s u = anytime (between t1 t2) $ u `and` give (times s one_chf)
-american Put  (t1, t2) s u = anytime (between t1 t2) $ give u `and` (times s one_chf)
+american Put  (t1, t2) s u = anytime (between t1 t2) $ give u `and`  times s one_chf
 
 -- | Down-and-In Options
 down_and_in :: Double     -- ^ Barrier
             -> Contract   -- ^ Underlying
             -> Contract   -- ^ Contract
             -> Contract   -- ^ Conditional Contract
-down_and_in b u = when ((value u) %< (konst b))
+down_and_in b u = when (value u %< konst b)
 
 -- | Down-and-Out Options
 down_and_out :: Double    -- ^ Barrier
             -> Contract   -- ^ Underlying
             -> Contract   -- ^ Contract
             -> Contract   -- ^ Conditional Contract
-down_and_out b u = when ((value u) %> (konst b))
+down_and_out b u = when (value u %> konst b)
 
 -- | Zero Coupon Bond
 zcb :: Time     -- ^ Maturity
@@ -53,7 +61,8 @@ zcb :: Time     -- ^ Maturity
 zcb t n = when (at t) $ times n one_chf
 
 -- | Low Exercise Price Option
-lepo t u = european Call t s u
+lepo :: Time -> Contract -> Contract
+lepo t = european Call t s
   where
     s = 0.01
 
