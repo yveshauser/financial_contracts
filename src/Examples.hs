@@ -26,7 +26,7 @@ wiener = normal 0 1 >>= (return . (!!) . scanl1 (+)) . repeat
 geometric_brownian_motion :: MonadSample m => Double -> Double -> Double -> Process m Double
 geometric_brownian_motion μ σ s_0 = do
   w_t <- wiener
-  return $ (\t -> s_0 * exp (μ-(σ*σ)/2) * int2Double t) + (const σ * w_t)
+  return $ \t -> s_0 * exp (((μ-(σ*σ)/2) * int2Double t) + (σ * w_t t))
 
 example_model :: MonadSample m => Model m
 example_model = Model {
@@ -40,10 +40,10 @@ example_model = Model {
 example_exch :: MonadSample m => Currency -> Currency -> Process m Double
 example_exch k1 k2 | k1 == k2 = return $ const 1
 example_exch k1 k2 | k2 < k1 = example_exch k2 k1
-example_exch _ _ = geometric_brownian_motion 1.0 0.1 0.1
+example_exch _ _ = geometric_brownian_motion 0.1 0.1 1.0
 
 intrest_rate :: MonadSample m => Process m Double
-intrest_rate = geometric_brownian_motion 0.0 0.1 0.1
+intrest_rate = geometric_brownian_motion 0.1 0.1 0.0
 
 example_disc :: MonadSample m => Currency -> (Process m Bool, Process m Double) -> Process m Double
 example_disc _ (b, d) = do
@@ -73,11 +73,12 @@ test8 = test one_eur
 
 main :: IO ()
 main = do
-  sampleIO test1 >>= \f -> print (f 0)
-  sampleIO test2 >>= \f -> print (f 0)
-  sampleIO test3 >>= \f -> print (f 0)
-  sampleIO test4 >>= \f -> print (f 0)
-  sampleIO test5 >>= \f -> print (f 0)
+  sampleIO test1 >>= \f -> print (f 10)
+  sampleIO test2 >>= \f -> print (f 10)
+  sampleIO test3 >>= \f -> print (f 10)
+  sampleIO test4 >>= \f -> print (f 10)
+  sampleIO test5 >>= \f -> print (f 10)
   -- sampleIO test6 >>= \f -> print (f 0)
-  sampleIO test7 >>= \f -> print (f 0)
-  sampleIO test8 >>= \f -> print (f 1)
+  sampleIO test7 >>= \f -> print (f 10)
+  sampleIO test8 >>= \f -> print (f 10)
+  -- sampleIO (geometric_brownian_motion 1.0 1.0 100.0) >>= \f -> print $ map f [1..100]
