@@ -1,10 +1,10 @@
 {-# LANGUAGE GADTs, RankNTypes, TypeSynonymInstances, FlexibleInstances, LiberalTypeSynonyms, IncoherentInstances #-}
 module Valuation where
 
-import Prelude hiding (and, or, zipWith)
+import Prelude hiding (and, or)
 import Control.Applicative (liftA2, liftA3)
 
-import Contracts
+import Contracts hiding (cond, lift, lift2)
 
 -- trace
 type Trace a = Time -> a
@@ -20,6 +20,23 @@ instance Num a => Num (Trace a) where
 
 -- value process
 type Process m a = m (Trace a)
+
+-- Process primitives, as defined in Figure 6.6
+
+bigK :: Applicative m => a -> Process m a
+bigK = pure . const
+
+date :: Trace Time
+date = id
+
+cond :: Trace Bool -> Trace Double -> Trace Double -> Trace Double
+cond bs xs ys t = if bs t then xs t else ys t
+
+lift :: (a -> b) -> Trace a -> Trace b
+lift f a t = f (a t)
+
+lift2 :: (a -> b -> c) -> Trace a -> Trace b -> Trace c
+lift2 f a b t = f (a t) (b t)
 
 instance (Num a, Applicative m) => Num (Process m a) where
   fromInteger = bigK . fromInteger
@@ -49,7 +66,7 @@ evalC m@(Model _ exch disc snell absorb) k = eval
     eval (o `Scale` c)  = evalO m k o * eval c
     eval (c1 `And` c2)  = eval c1 + eval c2
     eval (c1 `Or` c2)   = liftA2 max' (eval c1) (eval c2)
-    eval (Cond o c1 c2) = liftA3 cond' (evalO m k o) (eval c1) (eval c2)
+    eval (Cond o c1 c2) = liftA3 cond (evalO m k o) (eval c1) (eval c2)
     eval (When o c)     = disc k (evalO m k o, eval c)
     eval (Anytime o c)  = snell k (evalO m k o, eval c)
     eval (Until o c)    = absorb k (evalO m k o, eval c)
@@ -63,14 +80,5 @@ evalO m k (Before t)    = pure (t<)
 evalO m k (After t)     = pure (t>)
 evalO m k (Value c)     = evalC m k c
 
-bigK :: Applicative m => a -> Process m a
-bigK = pure . const
-
-zipWith :: Ord a => (a -> a -> a) -> Trace a -> Trace a -> Trace a
-zipWith f a b t = f (a t) (b t)
-
 max' :: Ord a => Trace a -> Trace a -> Trace a
-max' = zipWith max
-
-cond' :: Trace Bool -> Trace Double -> Trace Double -> Trace Double
-cond' bs xs ys t = if bs t then xs t else ys t
+max' = lift2 max
