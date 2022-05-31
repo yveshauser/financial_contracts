@@ -37,6 +37,8 @@ example_model = Model {
   , absorb = example_absorb
 }
 
+-- FIXME: Make sure, no-arbitrage conditions hold:
+-- example_exch k1 k2 * example_exch k2 k3 = example_exch k1 k3
 example_exch :: MonadSample m => Currency -> Currency -> Process m Double
 example_exch k1 k2 | k1 == k2 = return $ const 1
 example_exch k1 k2 | k2 < k1 = example_exch k2 k1
@@ -58,6 +60,11 @@ example_snell _  = undefined
 example_absorb :: MonadSample m => Currency -> (Process m Bool, Process m Double) -> Process m Double
 example_absorb _ = undefined
 
+sampleGBM :: IO ()
+sampleGBM = do
+  f <- sampleIO (geometric_brownian_motion 1.0 1.0 100.0)
+  print $ map f [1 .. 100]
+
 test :: MonadSample m => Contract -> Process m Double
 test = evalC example_model CHF
 
@@ -78,7 +85,7 @@ main = do
   sampleIO test3 >>= \f -> print (f 10)
   sampleIO test4 >>= \f -> print (f 10)
   sampleIO test5 >>= \f -> print (f 10)
+  -- TODO: Implement snell
   -- sampleIO test6 >>= \f -> print (f 0)
   sampleIO test7 >>= \f -> print (f 10)
   sampleIO test8 >>= \f -> print (f 10)
-  -- sampleIO (geometric_brownian_motion 1.0 1.0 100.0) >>= \f -> print $ map f [1..100]
