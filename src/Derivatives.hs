@@ -6,7 +6,7 @@ import Contracts
 {-# ANN module "HLint: ignore Use camelCase" #-}
 
 cur :: Currency -> Double -> Contract
-cur k o = scale (konst o) (one k)
+cur k o = scale (konst o) (one $ Cur k)
 
 chf :: Double -> Contract
 chf = cur CHF
@@ -115,4 +115,4 @@ brc t n s b u = z `and` short o
     o = down_and_in b u $ european Put t s u
 
 with_costs :: Double -> Contract -> Contract
-with_costs v c = amount v CHF `and` c
+with_costs v c = amount v (Cur CHF) `and` c

@@ -8,11 +8,13 @@ import Data.Time
 
 type Time = Int
 data Currency = CHF | EUR | USD deriving (Ord, Eq, Show)
+data Stock = X | Y | Z deriving (Ord, Eq, Show)
+data Asset = Cur Currency | Stk Stock deriving (Ord, Eq, Show)
 
 -- Primitives for defining contracts, see Figure 6.2
 data Contract
     = Zero
-    | One Currency
+    | One Asset
     | Give Contract
     | And Contract Contract
     | Or Contract Contract
@@ -60,7 +62,7 @@ between t1 t2 = after t1 %&& before t2
 zero :: Contract
 zero = Zero
 
-one :: Currency -> Contract
+one :: Asset -> Contract
 one = One
 
 give :: Contract -> Contract
@@ -90,7 +92,7 @@ until = Until
 times :: Double -> Contract -> Contract
 times = scale . konst
 
-amount :: Double -> Currency -> Contract
+amount :: Double -> Asset -> Contract
 amount n k = times n (one k)
 
 short :: Contract -> Contract

@@ -17,7 +17,7 @@ dc_example = with_costs 1 $ dc term strike underlying
     costs = 1
     term = 125 -- 0.5y
     strike = 105
-    underlying = amount 100 CHF
+    underlying = amount 100 (Cur CHF)
 
 -- bdc example, p.209
 -- value(bdc_example, t0) = 105 - 16 + 6 + 2 = 97
@@ -27,7 +27,7 @@ bdc_example = with_costs 2 $ bdc term strike barrier underlying
     costs = 1
     term = 125 -- 0.5y
     strike = 105
-    underlying = amount 105 CHF
+    underlying = amount 105 (Cur CHF)
     barrier = 80
 
 -- rc example, p.218
@@ -44,7 +44,7 @@ rc_example = with_costs costs $ rc term nominal coupon ratio strike underlying
     coupon = 0.12
     strike = 100
     ratio = 10
-    underlying = times ratio $ amount 100 CHF
+    underlying = times ratio $ amount 100 (Cur CHF)
 
 -- brc example, p.229
 brc_example :: Contract

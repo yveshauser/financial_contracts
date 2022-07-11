@@ -39,7 +39,7 @@ example_model = Model {
 
 -- FIXME: Make sure, no-arbitrage conditions hold:
 -- example_exch k1 k2 * example_exch k2 k3 = example_exch k1 k3
-example_exch :: MonadSample m => Currency -> Currency -> Process m Double
+example_exch :: MonadSample m => Asset -> Asset -> Process m Double
 example_exch k1 k2 | k1 == k2 = return $ const 1
 example_exch k1 k2 | k2 < k1 = example_exch k2 k1
 example_exch _ _ = geometric_brownian_motion 0.1 0.1 1.0
@@ -47,17 +47,17 @@ example_exch _ _ = geometric_brownian_motion 0.1 0.1 1.0
 intrest_rate :: MonadSample m => Process m Double
 intrest_rate = geometric_brownian_motion 0.1 0.1 0.0
 
-example_disc :: MonadSample m => Currency -> (Process m Bool, Process m Double) -> Process m Double
+example_disc :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
 example_disc _ (b, d) = do
   p1 <- d
   p2 <- intrest_rate
   pb <- b
   return $ \t -> if pb t then p1 t else p1 t/(1 + p2 t/100)
 
-example_snell :: MonadSample m => Currency -> (Process m Bool, Process m Double) -> Process m Double
+example_snell :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
 example_snell _  = undefined
 
-example_absorb :: MonadSample m => Currency -> (Process m Bool, Process m Double) -> Process m Double
+example_absorb :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
 example_absorb _ = undefined
 
 sampleGBM :: IO ()
@@ -66,7 +66,7 @@ sampleGBM = do
   print $ map f [1 .. 100]
 
 test :: MonadSample m => Contract -> Process m Double
-test = evalC example_model CHF
+test = evalC example_model (Cur CHF)
 
 test1, test2, test3, test4, test5, test6, test7, test8 :: Process SamplerIO Double
 test1 = test zero

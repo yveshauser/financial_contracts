@@ -50,14 +50,14 @@ instance (Num a, Applicative m) => Num (Process m a) where
 data Model m where
   Model :: Applicative m => {
     modelStart :: Time
-      , exch   :: Currency -> Currency -> Process m Double
-      , disc   :: Currency -> (Process m Bool, Process m Double) -> Process m Double
-      , snell  :: Currency -> (Process m Bool, Process m Double) -> Process m Double
-      , absorb :: Currency -> (Process m Bool, Process m Double) -> Process m Double
+      , exch   :: Asset -> Asset -> Process m Double
+      , disc   :: Asset -> (Process m Bool, Process m Double) -> Process m Double
+      , snell  :: Asset -> (Process m Bool, Process m Double) -> Process m Double
+      , absorb :: Asset -> (Process m Bool, Process m Double) -> Process m Double
 } -> Model m
 
 -- evaluation of contracts
-evalC :: Applicative m => Model m -> Currency -> Contract -> Process m Double
+evalC :: Applicative m => Model m -> Asset -> Contract -> Process m Double
 evalC m@(Model _ exch disc snell absorb) k = eval
   where
     eval Zero           = bigK 0
@@ -71,7 +71,7 @@ evalC m@(Model _ exch disc snell absorb) k = eval
     eval (Anytime o c)  = snell k (evalO m k o, eval c)
     eval (Until o c)    = absorb k (evalO m k o, eval c)
 
-evalO :: Applicative m => Model m -> Currency -> Obs a -> Process m a
+evalO :: Applicative m => Model m -> Asset -> Obs a -> Process m a
 evalO m k (Konst a)     = bigK a
 evalO m k (Lift f a)    = (.) f <$> evalO m k a
 evalO m k (Lift2 f a b) = liftA2 f <$> evalO m k a <*> evalO m k b
