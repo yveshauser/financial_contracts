@@ -76,22 +76,24 @@ sampleGBM = do
 
 evalModel :: Contract -> Maybe Double
 evalModel (When (At t) (Or (And a (Give (Scale (Konst s) (One (Cur c))))) Zero)) =
-  let σ = vola a
-      p = price a
-      r = 0.1
-   in Just $ call p 0 s r σ 1
+  do σ <- vola a
+     p <- price a
+     let r = 0.1
+     Just $ call p 0 s r σ 1
 evalModel (When (At t) (Or (And (Give a) ((Scale (Konst s) (One (Cur c))))) Zero)) =
-  let σ = vola a
-      p = price a
-      r = 0.1
-   in Just $ put p 0 s r σ 1
+  do σ <- vola a
+     p <- price a
+     let r = 0.1
+     Just $ put p 0 s r σ 1
 evalModel _ = Nothing
 
-vola :: Contract -> Double
-vola _ = 0.4
+vola :: Contract -> Maybe Double
+vola (One (Stk X)) = Just 0.4
+vola _ = Nothing
 
-price :: Contract -> Double
-price _ = 100
+price :: Contract -> Maybe Double
+price (One (Stk X)) = Just 100
+price _ = Nothing
 
 call ::
      Double -- ^ Price of Underlying
