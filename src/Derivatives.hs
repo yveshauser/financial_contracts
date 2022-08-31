@@ -5,20 +5,14 @@ import Contracts
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 
-cur :: Currency -> Double -> Contract
-cur k o = scale (konst o) (one $ Cur k)
+cur :: Currency -> Contract
+cur k = one $ Cur k
 
-chf :: Double -> Contract
+chf :: Contract
 chf = cur CHF
 
-eur :: Double -> Contract
+eur :: Contract
 eur = cur EUR
-
-one_chf :: Contract
-one_chf = chf 1.0
-
-one_eur :: Contract
-one_eur = eur 1.0
 
 data OptionKind = Call | Put
 
@@ -26,19 +20,21 @@ data OptionKind = Call | Put
 european :: OptionKind -- ^ Kind of Option
          -> Time       -- ^ Maturity
          -> Double     -- ^ Strike Price
+         -> Currency   -- ^ Currency of the Strike Price
          -> Contract   -- ^ Underlying Asset
          -> Contract   -- ^ European Option Contract
-european Call t s u = when (at t) $ (u `and` give (times s one_chf)) `or` zero
-european Put  t s u = when (at t) $ (give u `and`  times s one_chf ) `or` zero
+european Call t s c u = when (at t) $ (u `and` give (times s (cur c))) `or` zero
+european Put  t s c u = when (at t) $ (give u `and`  times s (cur c) ) `or` zero
 
 -- | American Options
 american :: OptionKind   -- ^ Kind of Option
          -> (Time, Time) -- ^ Lifetime
          -> Double       -- ^ Strike Price
+         -> Currency     -- ^ Currency of the Strike Price
          -> Contract     -- ^ Underlying Asset
          -> Contract     -- ^ American Option Contract
-american Call (t1, t2) s u = anytime (between t1 t2) $ u `and` give (times s one_chf)
-american Put  (t1, t2) s u = anytime (between t1 t2) $ give u `and`  times s one_chf
+american Call (t1, t2) s c u = anytime (between t1 t2) $ u `and` give (times s (cur c))
+american Put  (t1, t2) s c u = anytime (between t1 t2) $ give u `and`  times s (cur c)
 
 -- | Down-and-In Options
 down_and_in :: Double     -- ^ Barrier
@@ -58,10 +54,10 @@ down_and_out b u = when (value u %> konst b)
 zcb :: Time     -- ^ Maturity
     -> Double   -- ^ Nominal
     -> Contract -- ^ Zero Coupon Bond Contract
-zcb t n = when (at t) $ times n one_chf
+zcb t n = when (at t) $ times n chf
 
 -- | Low Exercise Price Option
-lepo :: Time -> Contract -> Contract
+lepo :: Time -> Currency -> Contract -> Contract
 lepo t = european Call t s
   where
     s = 0.01
@@ -72,22 +68,24 @@ lepo t = european Call t s
 -- | Discount Certificate (1200)
 dc :: Time     -- ^ Maturity
    -> Double   -- ^ Strike Price
+   -> Currency -- ^ Currency
    -> Contract -- ^ Underlying
    -> Contract -- ^ Discount Certificate Contract
-dc t s u = l `and` short o
+dc t s c u = l `and` short o
   where
-    l = lepo t u
-    o = european Call t s u
+    l = lepo t c u
+    o = european Call t s c u
 
 -- | Discount Certificate (1210)
 bdc :: Time    -- ^ Maturity
    -> Double   -- ^ Strike Price
    -> Double   -- ^ Barrier
+   -> Currency -- ^ Currency
    -> Contract -- ^ Underlying
    -> Contract -- ^ Discount Certificate Contract
-bdc t b s u = dc t s u `and` o
+bdc t b s c u = dc t s c u `and` o
   where
-    o = down_and_out b u $ european Put t s u
+    o = down_and_out b u $ european Put t s c u
 
 -- | Reverse Convertible (1220)
 rc :: Time     -- ^ Maturity
@@ -95,24 +93,26 @@ rc :: Time     -- ^ Maturity
    -> Double   -- ^ Coupon
    -> Double   -- ^ Ratio
    -> Double   -- ^ Strike Price
+   -> Currency -- ^ Currency
    -> Contract -- ^ Underlying
    -> Contract -- ^ Reverse Convertible Contract
-rc t n c r s u = z `and` times r (short o)
+rc t n p r s c u = z `and` times r (short o)
   where
-    z = zcb t $ (1+c)*n
-    o = european Put t s u
+    z = zcb t $ (1+p)*n
+    o = european Put t s c u
 
 -- | Barrier Reverse Convertible (1230)
 brc :: Time       -- ^ Maturity
     -> Double     -- ^ Nominal
     -> Double     -- ^ Strike Price
     -> Double     -- ^ Barrier
+    -> Currency   -- ^ Currency
     -> Contract   -- ^ Underlying
     -> Contract   -- ^ Barrier Reverse Convertible Contract
-brc t n s b u = z `and` short o
+brc t n s b c u = z `and` short o
   where
     z = zcb t n
-    o = down_and_in b u $ european Put t s u
+    o = down_and_in b u $ european Put t s c u
 
 with_costs :: Double -> Contract -> Contract
 with_costs v c = amount v (Cur CHF) `and` c
