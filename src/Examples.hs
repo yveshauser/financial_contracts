@@ -173,6 +173,17 @@ main = do
 
   print $ evalModel euCallOnX
 
+  putStrLn "=================== European Put on X ==================="
+  let euPutOnX = european Put 100 14.0 CHF (one (Stk X)) :: Contract
+  f <- sample euPutOnX
+
+  print euPutOnX
+  print $
+    let times = [0..100]
+     in zip times (map f times)
+
+  print $ evalModel euPutOnX
+
   putStrLn "=================== American Call on X ==================="
   -- TODO: Implement snell
   -- let amCallOnX = american Call (0, 0) 1 CHF (one (Stk X))
