@@ -193,4 +193,4 @@ main = do
     test = evalC example_model (Cur CHF)
 
     sample :: Contract -> IO (Time -> Double)
-    sample c = sampleIO (test c) -- >>= \f -> return $ f t
+    sample = sampleIO . test
