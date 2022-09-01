@@ -75,24 +75,34 @@ sampleGBM = do
 -- analytical pricing using Black-Scholes Model
 
 evalModel :: Contract -> Maybe Double
-evalModel (When (At t) (Or (And a (Give (Scale (Konst s) (One (Cur c))))) Zero)) =
+evalModel (When (At t) (Or (And a (Give (Scale (Konst k) (One (Cur c))))) Zero)) =
   do σ <- vola a
-     p <- price a
-     let r = 0.1
-     Just $ call p 0 s r σ 1
-evalModel (When (At t) (Or (And (Give a) ((Scale (Konst s) (One (Cur c))))) Zero)) =
+     s <- price a
+     let r = 0.0
+     Just $ call s 0 k r σ 1
+evalModel (When (At t) (Or (And (Give (Scale (Konst k) (One (Cur c)))) a) Zero)) =
   do σ <- vola a
-     p <- price a
-     let r = 0.1
-     Just $ put p 0 s r σ 1
+     s <- price a
+     let r = 0.0
+     Just $ call s 0 k r σ 1
+evalModel (When (At t) (Or (And (Give a) ((Scale (Konst k) (One (Cur c))))) Zero)) =
+  do σ <- vola a
+     s <- price a
+     let r = 0.0
+     Just $ put s 0 k r σ 1
+evalModel (When (At t) (Or (And ((Scale (Konst k) (One (Cur c)))) (Give a)) Zero)) =
+  do σ <- vola a
+     s <- price a
+     let r = 0.0
+     Just $ put s 0 k r σ 1
 evalModel _ = Nothing
 
 vola :: Contract -> Maybe Double
-vola (One (Stk X)) = Just 0.4
+vola (One (Stk X)) = Just 0.0
 vola _ = Nothing
 
 price :: Contract -> Maybe Double
-price (One (Stk X)) = Just 100
+price (One (Stk X)) = Just 12
 price _ = Nothing
 
 call ::
