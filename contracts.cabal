@@ -14,15 +14,19 @@ library
                      , Derivatives_examples
                      , Examples
                      , Valuation
-  build-depends:       base >=4.11 && <4.17
-                     , aeson
+  build-depends:       aeson
+                     , base >=4.11 && <4.17
                      , bytestring
+                     , Chart
+                     , Chart-diagrams
                      , erf
                      , logfloat
+                     , list-transformer
+                     , monad-bayes
+                     -- , monad-extras
+                     , mtl
+                     , mwc-random
+                     , random
                      , text
                      , time
-                     , random
-                     , monad-bayes
-                     , mtl
                      , transformers
-                     , mwc-random

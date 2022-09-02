@@ -11,24 +11,32 @@ import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
 import Data.Functor ((<&>))
+import Data.List as L
 import Data.Number.Erf
+import List.Transformer as T
 import GHC.Float
+
+import Graphics.Rendering.Chart.Easy hiding (scale, index)
+import Graphics.Rendering.Chart.Backend.Diagrams
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 
 -------------------
 -- Distributions --
 -------------------
-std_normal :: MonadSample m => Process m Double
-std_normal = normal 0 1 <&> const
 
 wiener :: MonadSample m => Process m Double
-wiener = normal 0 1 >>= (return . (!!) . scanl1 (+)) . repeat
+wiener =
+  ListT
+    ( do
+        r <- normal 0 1
+        return (Cons r wiener)
+    )
 
 geometric_brownian_motion :: MonadSample m => Double -> Double -> Double -> Process m Double
-geometric_brownian_motion μ σ s_0 = do
-  w_t <- wiener
-  return $ \t -> s_0 * exp (((μ-(σ*σ)/2) * int2Double t) + (σ * w_t t))
+geometric_brownian_motion μ σ s_0 =
+  let f (t, w) = ((μ - (σ * σ) / 2) * (t / 100)) + (σ * w)
+   in bigK s_0 * fmap (exp . f) (T.zip index wiener)
 
 example_model :: MonadSample m => Model m
 example_model = Model {
@@ -42,11 +50,11 @@ example_model = Model {
 -- FIXME: Make sure, no-arbitrage conditions hold:
 -- example_exch k1 k2 * example_exch k2 k3 = example_exch k1 k3
 example_exch :: MonadSample m => Asset -> Asset -> Process m Double
-example_exch k1 k2 | k1 == k2 = return $ const 1
-example_exch (Cur CHF) (Cur EUR) = return $ const 1
-example_exch (Cur EUR) (Cur CHF) = return $ const 1
+example_exch k1 k2 | k1 == k2 = bigK 1
+example_exch (Cur CHF) (Cur EUR) = bigK 1
+example_exch (Cur EUR) (Cur CHF) = bigK 1
 example_exch k1 k2 | k2 < k1 = example_exch k2 k1
-example_exch (Cur CHF) (Stk X) = return $ const 12
+example_exch (Cur CHF) (Stk X) = bigK 12
 example_exch (Cur CHF) (Stk Y) = geometric_brownian_motion 0.1 0.1 10.0
 example_exch (Cur CHF) (Stk Z) = geometric_brownian_motion 0.1 0.1 100.0
 example_exch _ _ = undefined
@@ -59,18 +67,13 @@ example_disc _ (b, d) = do
   p1 <- d
   p2 <- intrest_rate
   pb <- b
-  return $ \t -> if pb t then p1 t else p1 t/(1 + p2 t/100)
+  return $ if pb then p1 else p1/(1 + p2/100)
 
 example_snell :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
 example_snell _  = undefined
 
 example_absorb :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
 example_absorb _ = undefined
-
-sampleGBM :: IO ()
-sampleGBM = do
-  f <- sampleIO (geometric_brownian_motion 1.0 1.0 100.0)
-  print $ map f [1 .. 100]
 
 -- analytical pricing using Black-Scholes Model
 
@@ -148,7 +151,7 @@ main = do
   print oneX
   print $
     let times = [0..100]
-     in zip times (map toValue times)
+     in L.zip times toValue
 
   putStrLn "=================== 1 CHF ==================="
   sample (scale 1 chf) >>= showAt 10
@@ -169,7 +172,7 @@ main = do
   print euCallOnX
   print $
     let times = [0..100]
-     in zip times (map f times)
+     in L.zip times f
 
   print $ evalModel euCallOnX
 
@@ -180,7 +183,7 @@ main = do
   print euPutOnX
   print $
     let times = [0..100]
-     in zip times (map f times)
+     in L.zip times f
 
   print $ evalModel euPutOnX
 
@@ -198,10 +201,39 @@ main = do
   sample (scale 1 eur) >>= showAt 10
 
   where
-    showAt x f = print (f x)
+    showAt x i = print (i!!x)
 
     test :: MonadSample m => Contract -> Process m Double
     test = evalC example_model (Cur CHF)
 
-    sample :: Contract -> IO (Time -> Double)
-    sample = sampleIO . test
+    sample :: Contract -> IO [Double]
+    sample = sampleIO . toTruncatedList 100 . test
+
+index :: MonadSample m => Process m Double
+index = select [0..]
+
+sampleBM :: IO ()
+sampleBM = sampleIO (toTruncatedList 100 wiener) >>= print
+
+toTruncatedList :: Monad m => Int -> ListT m a -> m [a]
+toTruncatedList = go
+  where
+    go 0 _ = return []
+    go n (ListT m) = do
+      s <- m
+      case s of
+        Nil -> return []
+        Cons x l' -> do
+          u <- go (n -1) l'
+          return (x : u)
+
+-- Graphs
+
+sampleGBM :: IO ()
+sampleGBM =
+  let t = [0.0 :: Double, 0.01 .. 1.0]
+   in do
+        x <- sampleIO (toTruncatedList 100 $ geometric_brownian_motion 0.1 0.02 20.0)
+        toFile def "sample_gbm.svg" $ do
+          layout_title .= "Sample GBM"
+          plot (line "path" [L.zip t x])
