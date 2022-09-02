@@ -56,7 +56,7 @@ example_exch k1 k2 | k2 < k1 = example_exch k2 k1
 example_exch (Cur CHF) (Stk X) = bigK 12
 example_exch (Cur CHF) (Stk Y) = geometric_brownian_motion 0.1 0.1 10.0
 example_exch (Cur CHF) (Stk Z) = geometric_brownian_motion 0.1 0.1 100.0
-example_exch _ _ = undefined
+example_exch _ _ = empty
 
 intrest_rate :: MonadSample m => Process m Double
 intrest_rate = geometric_brownian_motion 0.1 0.1 0.0
@@ -69,10 +69,10 @@ example_disc _ (b, d) = do
   return $ if pb then p1 else p1/(1 + p2/100)
 
 example_snell :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
-example_snell _  = undefined
+example_snell _ _ = empty -- TODO
 
 example_absorb :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
-example_absorb _ = undefined
+example_absorb _ _ = empty -- TODO
 
 -- analytical pricing using Black-Scholes Model
 
@@ -178,8 +178,10 @@ main = do
   print $ evalModel euPutOnX
 
   putStrLn "=================== American Call on X ==================="
-  -- TODO: Implement snell
-  -- let amCallOnX = american Call (0, 0) 1 CHF (one (Stk X))
+  let amCallOnX = american Call (0, 0) 1 CHF (one (Stk X))
+  print amCallOnX
+
+  sample amCallOnX >>= print
 
   putStrLn "=================== BRC on X ==================="
   let brcX = brc 10 1000 10.0 8.0 CHF (one (Stk X))
