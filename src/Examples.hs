@@ -16,7 +16,7 @@ import Data.Number.Erf
 import List.Transformer as T
 import GHC.Float
 
-import Graphics.Rendering.Chart.Easy hiding (scale)
+import Graphics.Rendering.Chart.Easy hiding (scale, index)
 import Graphics.Rendering.Chart.Backend.Diagrams
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
@@ -35,10 +35,8 @@ wiener =
 
 geometric_brownian_motion :: MonadSample m => Double -> Double -> Double -> Process m Double
 geometric_brownian_motion μ σ s_0 =
-  (select $ repeat s_0) * fmap (exp . f) (T.zip ind wiener)
-  where
-    ind = select [(1 :: Time) ..]
-    f (t, w) = ((μ - (σ * σ) / 2) * (int2Double t / 100)) + (σ * w)
+  let f (t, w) = ((μ - (σ * σ) / 2) * (t / 100)) + (σ * w)
+   in bigK s_0 * fmap (exp . f) (T.zip index wiener)
 
 example_model :: MonadSample m => Model m
 example_model = Model {
@@ -52,11 +50,11 @@ example_model = Model {
 -- FIXME: Make sure, no-arbitrage conditions hold:
 -- example_exch k1 k2 * example_exch k2 k3 = example_exch k1 k3
 example_exch :: MonadSample m => Asset -> Asset -> Process m Double
-example_exch k1 k2 | k1 == k2 = select $ repeat 1
-example_exch (Cur CHF) (Cur EUR) = select $ repeat 1
-example_exch (Cur EUR) (Cur CHF) = select $ repeat 1
+example_exch k1 k2 | k1 == k2 = bigK 1
+example_exch (Cur CHF) (Cur EUR) = bigK 1
+example_exch (Cur EUR) (Cur CHF) = bigK 1
 example_exch k1 k2 | k2 < k1 = example_exch k2 k1
-example_exch (Cur CHF) (Stk X) = select $ repeat 12
+example_exch (Cur CHF) (Stk X) = bigK 12
 example_exch (Cur CHF) (Stk Y) = geometric_brownian_motion 0.1 0.1 10.0
 example_exch (Cur CHF) (Stk Z) = geometric_brownian_motion 0.1 0.1 100.0
 example_exch _ _ = undefined
@@ -203,16 +201,19 @@ main = do
   sample (scale 1 eur) >>= showAt 10
 
   where
-    showAt x f = print (f!!x)
+    showAt x i = print (i!!x)
 
     test :: MonadSample m => Contract -> Process m Double
     test = evalC example_model (Cur CHF)
 
     sample :: Contract -> IO [Double]
-    sample = sampleIO . toTruncatedList 1000 . test
+    sample = sampleIO . toTruncatedList 100 . test
+
+index :: MonadSample m => Process m Double
+index = select [0..]
 
 sampleBM :: IO ()
-sampleBM = sampleIO (toTruncatedList 1000 wiener) >>= print
+sampleBM = sampleIO (toTruncatedList 100 wiener) >>= print
 
 toTruncatedList :: Monad m => Int -> ListT m a -> m [a]
 toTruncatedList = go
@@ -229,10 +230,10 @@ toTruncatedList = go
 -- Graphs
 
 sampleGBM :: IO ()
-sampleGBM = do
-  x <- sampleIO (toTruncatedList 1000 $ geometric_brownian_motion 0.1 0.02 20.0)
-  let t = map (/100) [1::Double .. 100]
-  print x
-  toFile def "sample_gbm.svg" $ do
-    layout_title .= "Sample GBM"
-    plot (line "path" [ [ (d,v) | (d,v) <- L.zip t x] ])
+sampleGBM =
+  let t = [0.0 :: Double, 0.01 .. 1.0]
+   in do
+        x <- sampleIO (toTruncatedList 100 $ geometric_brownian_motion 0.1 0.02 20.0)
+        toFile def "sample_gbm.svg" $ do
+          layout_title .= "Sample GBM"
+          plot (line "path" [L.zip t x])
