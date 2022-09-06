@@ -6,7 +6,7 @@ import Contracts hiding (lift)
 import Derivatives
 import Valuation
 
-import Prelude hiding (and, or, zip)
+import Prelude hiding (and, or, take, zip)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
@@ -199,18 +199,17 @@ main = do
     test = evalC example_model (Cur CHF)
 
     sample :: Contract -> IO [Double]
-    sample = sampleIO . toTruncatedList 100 . test
+    sample = sampleIO . takeOut 100 . test
 
-toTruncatedList :: Monad m => Int -> ListT m a -> m [a]
-toTruncatedList = go
+takeOut :: Monad m => Int -> ListT m a -> m [a]
+takeOut n = run . take n
   where
-    go 0 _ = return []
-    go n (ListT m) = do
+    run (ListT m) = do
       s <- m
       case s of
         Nil -> return []
-        Cons x l' -> do
-          u <- go (n -1) l'
+        Cons x l -> do
+          u <- run l
           return (x : u)
 
 index :: MonadSample m => Process m Double
@@ -220,7 +219,7 @@ index = select [0,0.01..]
 
 sampleGBM :: IO ()
 sampleGBM = do
-  x <- sampleIO (toTruncatedList 100 $ index `zip` geometric_brownian_motion 0.1 0.02 20.0)
+  x <- sampleIO (takeOut 100 $ index `zip` geometric_brownian_motion 0.1 0.02 20.0)
   toFile def "sample_gbm.svg" $ do
     layout_title .= "Sample GBM"
     plot (line "path" [x])
