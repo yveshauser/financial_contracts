@@ -81,22 +81,22 @@ evalModel (When (At t) (Or (And a (Give (Scale (Konst k) (One (Cur c))))) Zero))
   do σ <- vola a
      s <- price a
      let r = 0.0
-     Just $ call s 0 k r σ 1
+     Just $ call s 0 k r σ t
 evalModel (When (At t) (Or (And (Give (Scale (Konst k) (One (Cur c)))) a) Zero)) =
   do σ <- vola a
      s <- price a
      let r = 0.0
-     Just $ call s 0 k r σ 1
+     Just $ call s 0 k r σ t
 evalModel (When (At t) (Or (And (Give a) ((Scale (Konst k) (One (Cur c))))) Zero)) =
   do σ <- vola a
      s <- price a
      let r = 0.0
-     Just $ put s 0 k r σ 1
+     Just $ put s 0 k r σ t
 evalModel (When (At t) (Or (And ((Scale (Konst k) (One (Cur c)))) (Give a)) Zero)) =
   do σ <- vola a
      s <- price a
      let r = 0.0
-     Just $ put s 0 k r σ 1
+     Just $ put s 0 k r σ t
 evalModel _ = Nothing
 
 vola :: Contract -> Maybe Double
@@ -190,7 +190,7 @@ main = do
   sample brcX >>= showAt 10
 
   putStrLn "=================== 1 EUR ==================="
-  sample (scale 1 eur) >>= showAt 1
+  sample (scale 1 eur) >>= showAt 10
 
   where
     showAt x i = print (i!!x)

@@ -6,10 +6,12 @@ import Prelude hiding (and, or)
 import Data.Aeson
 import Data.Time
 
-type Time = Int
 data Currency = CHF | EUR | USD deriving (Ord, Eq, Show)
 data Stock = X | Y | Z deriving (Ord, Eq, Show)
 data Asset = Cur Currency | Stk Stock deriving (Ord, Eq, Show)
+
+-- NOTE: for now we just use relative times (in years)
+type Time = Double
 
 -- Primitives for defining contracts, see Figure 6.2
 data Contract
