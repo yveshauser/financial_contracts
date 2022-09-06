@@ -34,7 +34,7 @@ wiener =
 
 geometric_brownian_motion :: MonadSample m => Double -> Double -> Double -> Process m Double
 geometric_brownian_motion μ σ s_0 =
-  let f (t, w) = ((μ - (σ * σ) / 2) * (t / 100)) + (σ * w)
+  let f (t, w) = ((μ - (σ * σ) / 2) * t) + (σ * w)
    in bigK s_0 * fmap (exp . f) (zip index wiener)
 
 example_model :: MonadSample m => Model m
@@ -162,7 +162,7 @@ main = do
   sample zcbX >>= showAt 10
 
   putStrLn "=================== European Call on X ==================="
-  let euCallOnX = european Call 100 10.0 CHF (one (Stk X)) :: Contract
+  let euCallOnX = european Call 1 10.0 CHF (one (Stk X)) :: Contract
   print euCallOnX
 
   sample euCallOnX >>= print
@@ -170,7 +170,7 @@ main = do
   print $ evalModel euCallOnX
 
   putStrLn "=================== European Put on X ==================="
-  let euPutOnX = european Put 100 14.0 CHF (one (Stk X)) :: Contract
+  let euPutOnX = european Put 1 14.0 CHF (one (Stk X)) :: Contract
   print euPutOnX
 
   sample euPutOnX >>= print
@@ -184,13 +184,13 @@ main = do
   sample amCallOnX >>= print
 
   putStrLn "=================== BRC on X ==================="
-  let brcX = brc 10 1000 10.0 8.0 CHF (one (Stk X))
+  let brcX = brc 1 1000 10.0 8.0 CHF (one (Stk X))
 
   print brcX
   sample brcX >>= showAt 10
 
   putStrLn "=================== 1 EUR ==================="
-  sample (scale 1 eur) >>= showAt 10
+  sample (scale 1 eur) >>= showAt 1
 
   where
     showAt x i = print (i!!x)
@@ -200,12 +200,6 @@ main = do
 
     sample :: Contract -> IO [Double]
     sample = sampleIO . toTruncatedList 100 . test
-
-index :: MonadSample m => Process m Double
-index = select [0..]
-
-sampleBM :: IO ()
-sampleBM = sampleIO (toTruncatedList 100 wiener) >>= print
 
 toTruncatedList :: Monad m => Int -> ListT m a -> m [a]
 toTruncatedList = go
@@ -219,11 +213,14 @@ toTruncatedList = go
           u <- go (n -1) l'
           return (x : u)
 
+index :: MonadSample m => Process m Double
+index = select [0,0.01..]
+
 -- Graphs
 
 sampleGBM :: IO ()
 sampleGBM = do
-  x <- sampleIO (toTruncatedList 100 $ select [0.0 :: Double, 0.01 ..] `zip` geometric_brownian_motion 0.1 0.02 20.0)
+  x <- sampleIO (toTruncatedList 100 $ index `zip` geometric_brownian_motion 0.1 0.02 20.0)
   toFile def "sample_gbm.svg" $ do
     layout_title .= "Sample GBM"
     plot (line "path" [x])
