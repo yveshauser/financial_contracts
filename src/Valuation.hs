@@ -30,9 +30,9 @@ evalC m@(Model _ exch disc snell absorb) k = eval
   where
     eval Zero           = bigK 0
     eval (One k1)       = exch k k1
-    eval (Give c)       = -(eval c)
-    eval (o `Scale` c)  = evalO m k o * eval c
-    eval (c1 `And` c2)  = eval c1 + eval c2
+    eval (Give c)       = fmap negate (eval c)
+    eval (o `Scale` c)  = zipP (*) (evalO m k o) (eval c)
+    eval (c1 `And` c2)  = zipP (+) (eval c1) (eval c2)
     eval (c1 `Or` c2)   = zipP max (eval c1) (eval c2)
     eval (Cond o c1 c2) = ifP (evalO m k o) (eval c1) (eval c2)
     eval (When o c)     = disc k (evalO m k o, eval c)
