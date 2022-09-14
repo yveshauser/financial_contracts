@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs #-}
 module Examples where
 
-import Contracts hiding (lift)
+import Contracts
 import Derivatives
 import Valuation
 
@@ -141,7 +141,7 @@ put s t k r σ m =
 main :: IO ()
 main = do
   putStrLn "=================== Zero ==================="
-  sample zero >>= showAt 10
+  sample zero >>= printAt 10
 
   putStrLn "=================== One X ==================="
   let oneX = one (Stk X) :: Contract
@@ -150,16 +150,16 @@ main = do
   sample oneX >>= print
 
   putStrLn "=================== 1 CHF ==================="
-  sample (scale 1 chf) >>= showAt 10
+  sample (scale 1 chf) >>= printAt 10
 
   putStrLn "=================== 5 CHF ==================="
-  sample (scale 5 chf) >>= showAt 10
+  sample (scale 5 chf) >>= printAt 10
 
   putStrLn "=================== ZCB ==================="
   let zcbX = zcb 0 100
 
   print zcbX
-  sample zcbX >>= showAt 10
+  sample zcbX >>= printAt 10
 
   putStrLn "=================== European Call on X ==================="
   let euCallOnX = european Call 1 10.0 CHF (one (Stk X)) :: Contract
@@ -187,13 +187,13 @@ main = do
   let brcX = brc 1 1000 10.0 8.0 CHF (one (Stk X))
 
   print brcX
-  sample brcX >>= showAt 10
+  sample brcX >>= printAt 10
 
   putStrLn "=================== 1 EUR ==================="
-  sample (scale 1 eur) >>= showAt 10
+  sample (scale 1 eur) >>= printAt 10
 
   where
-    showAt x i = print (i!!x)
+    printAt i = print . (!!i)
 
     test :: MonadSample m => Contract -> Process m Double
     test = evalC example_model (Cur CHF)
