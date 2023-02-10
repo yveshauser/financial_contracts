@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
-module Examples where
+module Models.GeometricBrownianMotion where
 
 import Contracts
 import Derivatives
@@ -166,8 +166,14 @@ main = do
   print euCallOnX
 
   sample euCallOnX >>= print
-
   print $ evalModel euCallOnX
+
+  putStrLn "=================== European Call on Z ==================="
+  let euCallOnZ = european Call 120 100.0 CHF (one (Stk Z)) :: Contract
+  print euCallOnZ
+
+  sample euCallOnZ >>= print
+  print $ evalModel euCallOnZ
 
   putStrLn "=================== European Put on X ==================="
   let euPutOnX = european Put 1 14.0 CHF (one (Stk X)) :: Contract

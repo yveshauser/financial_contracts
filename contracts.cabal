@@ -11,8 +11,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Contracts
                      , Derivatives
-                     , Derivatives_examples
-                     , Examples
+                     , Models.GeometricBrownianMotion
                      , Valuation
   build-depends:       aeson
                      , base >=4.11 && <4.17
@@ -23,7 +22,6 @@ library
                      , logfloat
                      , list-transformer
                      , monad-bayes
-                     -- , monad-extras
                      , mtl
                      , mwc-random
                      , random
