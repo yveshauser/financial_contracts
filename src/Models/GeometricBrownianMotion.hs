@@ -32,8 +32,8 @@ wiener =
         return (Cons r wiener)
     )
 
-geometric_brownian_motion :: MonadSample m => Double -> Double -> Double -> Process m Double
-geometric_brownian_motion μ σ s_0 =
+geombm :: MonadSample m => Double -> Double -> Double -> Process m Double
+geombm μ σ s_0 =
   let f (t, w) = ((μ - (σ * σ) / 2) * t) + (σ * w)
    in bigK s_0 * fmap (exp . f) (zip index wiener)
 
@@ -54,12 +54,12 @@ geombm_exch (Cur CHF) (Cur EUR) = bigK 1
 geombm_exch (Cur EUR) (Cur CHF) = bigK 1
 geombm_exch k1 k2 | k2 < k1 = geombm_exch k2 k1
 geombm_exch (Cur CHF) (Stk X) = bigK 12
-geombm_exch (Cur CHF) (Stk Y) = geometric_brownian_motion 0.1 0.1 10.0
-geombm_exch (Cur CHF) (Stk Z) = geometric_brownian_motion 0.1 0.1 100.0
+geombm_exch (Cur CHF) (Stk Y) = geombm 0.1 0.1 10.0
+geombm_exch (Cur CHF) (Stk Z) = geombm 0.1 0.1 100.0
 geombm_exch _ _ = empty
 
 intrest_rate :: MonadSample m => Process m Double
-intrest_rate = geometric_brownian_motion 0.1 0.1 0.0
+intrest_rate = geombm 0.1 0.1 0.0
 
 geombm_disc :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
 geombm_disc _ (b, d) = do
@@ -225,7 +225,7 @@ index = select [0,0.01..]
 
 sampleGBM :: IO ()
 sampleGBM = do
-  x <- sampleIO (takeOut 100 $ index `zip` geometric_brownian_motion 0.1 0.02 20.0)
+  x <- sampleIO (takeOut 100 $ index `zip` geombm 0.1 0.02 20.0)
   toFile def "sample_gbm.svg" $ do
     layout_title .= "Sample GBM"
     plot (line "path" [x])
