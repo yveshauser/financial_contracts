@@ -37,42 +37,42 @@ geometric_brownian_motion μ σ s_0 =
   let f (t, w) = ((μ - (σ * σ) / 2) * t) + (σ * w)
    in bigK s_0 * fmap (exp . f) (zip index wiener)
 
-example_model :: MonadSample m => Model m
-example_model = Model {
+geombm_model :: MonadSample m => Model m
+geombm_model = Model {
     modelStart = 0
-  , exch = example_exch
-  , disc = example_disc
-  , snell = example_snell
-  , absorb = example_absorb
+  , exch = geombm_exch
+  , disc = geombm_disc
+  , snell = geombm_snell
+  , absorb = geombm_absorb
 }
 
 -- FIXME: Make sure, no-arbitrage conditions hold:
--- example_exch k1 k2 * example_exch k2 k3 = example_exch k1 k3
-example_exch :: MonadSample m => Asset -> Asset -> Process m Double
-example_exch k1 k2 | k1 == k2 = bigK 1
-example_exch (Cur CHF) (Cur EUR) = bigK 1
-example_exch (Cur EUR) (Cur CHF) = bigK 1
-example_exch k1 k2 | k2 < k1 = example_exch k2 k1
-example_exch (Cur CHF) (Stk X) = bigK 12
-example_exch (Cur CHF) (Stk Y) = geometric_brownian_motion 0.1 0.1 10.0
-example_exch (Cur CHF) (Stk Z) = geometric_brownian_motion 0.1 0.1 100.0
-example_exch _ _ = empty
+-- geombm_exch k1 k2 * geombm_exch k2 k3 = geombm_exch k1 k3
+geombm_exch :: MonadSample m => Asset -> Asset -> Process m Double
+geombm_exch k1 k2 | k1 == k2 = bigK 1
+geombm_exch (Cur CHF) (Cur EUR) = bigK 1
+geombm_exch (Cur EUR) (Cur CHF) = bigK 1
+geombm_exch k1 k2 | k2 < k1 = geombm_exch k2 k1
+geombm_exch (Cur CHF) (Stk X) = bigK 12
+geombm_exch (Cur CHF) (Stk Y) = geometric_brownian_motion 0.1 0.1 10.0
+geombm_exch (Cur CHF) (Stk Z) = geometric_brownian_motion 0.1 0.1 100.0
+geombm_exch _ _ = empty
 
 intrest_rate :: MonadSample m => Process m Double
 intrest_rate = geometric_brownian_motion 0.1 0.1 0.0
 
-example_disc :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
-example_disc _ (b, d) = do
+geombm_disc :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
+geombm_disc _ (b, d) = do
   p1 <- d
   p2 <- intrest_rate
   pb <- b
   return $ if pb then p1 else p1/(1 + p2/100)
 
-example_snell :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
-example_snell _ _ = empty -- TODO
+geombm_snell :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
+geombm_snell _ _ = empty -- TODO
 
-example_absorb :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
-example_absorb _ _ = empty -- TODO
+geombm_absorb :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
+geombm_absorb _ _ = empty -- TODO
 
 -- analytical pricing using Black-Scholes Model
 
@@ -202,7 +202,7 @@ main = do
     printAt i = print . (!!i)
 
     test :: MonadSample m => Contract -> Process m Double
-    test = evalC example_model (Cur CHF)
+    test = evalC geombm_model (Cur CHF)
 
     sample :: Contract -> IO [Double]
     sample = sampleIO . takeOut 100 . test
