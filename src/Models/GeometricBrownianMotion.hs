@@ -9,7 +9,6 @@ import Valuation
 import Prelude hiding (and, or, take, zip)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Sampler
 import Data.Functor ((<&>))
 import Data.Number.Erf
 import List.Transformer as T
@@ -17,6 +16,7 @@ import GHC.Float
 
 import Graphics.Rendering.Chart.Easy hiding (scale, index)
 import Graphics.Rendering.Chart.Backend.Diagrams
+import Control.Monad.Bayes.Sampler.Strict (sampleIO)
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 
@@ -24,7 +24,7 @@ import Graphics.Rendering.Chart.Backend.Diagrams
 -- Distributions --
 -------------------
 
-wiener :: MonadSample m => Process m Double
+wiener :: MonadDistribution m => Process m Double
 wiener =
   ListT
     ( do
@@ -32,12 +32,12 @@ wiener =
         return (Cons r wiener)
     )
 
-geombm :: MonadSample m => Double -> Double -> Double -> Process m Double
+geombm :: MonadDistribution m => Double -> Double -> Double -> Process m Double
 geombm μ σ s_0 =
   let f (t, w) = ((μ - (σ * σ) / 2) * t) + (σ * w)
    in bigK s_0 * fmap (exp . f) (zip index wiener)
 
-geombm_model :: MonadSample m => Model m
+geombm_model :: MonadDistribution m => Model m
 geombm_model = Model {
     modelStart = 0
   , exch = geombm_exch
@@ -48,7 +48,7 @@ geombm_model = Model {
 
 -- FIXME: Make sure, no-arbitrage conditions hold:
 -- geombm_exch k1 k2 * geombm_exch k2 k3 = geombm_exch k1 k3
-geombm_exch :: MonadSample m => Asset -> Asset -> Process m Double
+geombm_exch :: MonadDistribution m => Asset -> Asset -> Process m Double
 geombm_exch k1 k2 | k1 == k2 = bigK 1
 geombm_exch (Cur CHF) (Cur EUR) = bigK 1
 geombm_exch (Cur EUR) (Cur CHF) = bigK 1
@@ -58,20 +58,20 @@ geombm_exch (Cur CHF) (Stk Y) = geombm 0.1 0.1 10.0
 geombm_exch (Cur CHF) (Stk Z) = geombm 0.1 0.1 100.0
 geombm_exch _ _ = empty
 
-intrest_rate :: MonadSample m => Process m Double
+intrest_rate :: MonadDistribution m => Process m Double
 intrest_rate = geombm 0.1 0.1 0.0
 
-geombm_disc :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
+geombm_disc :: MonadDistribution m => Asset -> (Process m Bool, Process m Double) -> Process m Double
 geombm_disc _ (b, d) = do
   p1 <- d
   p2 <- intrest_rate
   pb <- b
   return $ if pb then p1 else p1/(1 + p2/100)
 
-geombm_snell :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
+geombm_snell :: MonadDistribution m => Asset -> (Process m Bool, Process m Double) -> Process m Double
 geombm_snell _ _ = empty -- TODO
 
-geombm_absorb :: MonadSample m => Asset -> (Process m Bool, Process m Double) -> Process m Double
+geombm_absorb :: MonadDistribution m => Asset -> (Process m Bool, Process m Double) -> Process m Double
 geombm_absorb _ _ = empty -- TODO
 
 -- analytical pricing using Black-Scholes Model
@@ -201,13 +201,13 @@ main = do
   where
     printAt i = print . (!!i)
 
-    test :: MonadSample m => Contract -> Process m Double
+    test :: MonadDistribution m => Contract -> Process m Double
     test = evalC geombm_model (Cur CHF)
 
     sample :: Contract -> IO [Double]
     sample = sampleIO . takeOut 100 . test
 
-takeOut :: Monad m => Int -> ListT m a -> m [a]
+takeOut :: MonadDistribution m => Int -> ListT m a -> m [a]
 takeOut n = run . take n
   where
     run (ListT m) = do
@@ -218,7 +218,7 @@ takeOut n = run . take n
           u <- run l
           return (x : u)
 
-index :: MonadSample m => Process m Double
+index :: MonadDistribution m => Process m Double
 index = select [0,0.01..]
 
 -- Graphs
