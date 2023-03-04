@@ -25,7 +25,7 @@ def crrModel (K:f64, S0:f64, r:f64, sigma:f64, T:f64, N:i64) =
       let qs = map (*q) V[0:i] :> [i]f64
       in map2 (+) ps qs) |> head |> (*f64.exp(-r*T))
 
--- Example from the refenced book, see Matlab-Programm 3.1 (p.38)
+-- Example from the referenced book, see Matlab-Programm 3.1 (p.38)
 def main (n:i64) =
   let K:f64 = 6
   let S0:f64 = 5
