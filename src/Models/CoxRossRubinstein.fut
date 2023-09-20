@@ -1,7 +1,8 @@
--- Cox Ross Rubinstein Model
+-- | Cox Ross Rubinstein Model
 --
 -- Reference: Finanzderivate mit Matlab, Michael Günther, Ansgar Jüngel
-def crrModel (K:f64, S0:f64, r:f64, sigma:f64, T:f64, N:i64) =
+-- FIXME: distinguish between call and put
+entry crrModel (K:f64) (S0:f64) (r:f64) (sigma:f64) (T:f64) (N:i64): *[N]f64 =
 
   let dt:f64 = T/(f64.i64 N)
   let beta = 0.5*(f64.exp(-r*dt) + f64.exp((r+sigma*sigma)*dt))
@@ -19,11 +20,12 @@ def crrModel (K:f64, S0:f64, r:f64, sigma:f64, T:f64, N:i64) =
     let Ks = replicate N K
     in map2 (\k s -> f64.max (k-s) 0) Ks S
 
+  -- FIXME: reverse 2x ?
   in (loop V for i in (iota N |> reverse) do
     V with [0:i] =
       let ps = map (*p) V[1:i+1] :> [i]f64
       let qs = map (*q) V[0:i] :> [i]f64
-      in map2 (+) ps qs) |> head |> (*f64.exp(-r*T))
+      in map2 (+) ps qs |> map (*f64.exp(-r*dt))) |> reverse
 
 -- Example from the referenced book, see Matlab-Programm 3.1 (p.38)
 def main (n:i64) =
@@ -32,4 +34,4 @@ def main (n:i64) =
   let r:f64 = 0.04
   let sigma:f64 = 0.3
   let T:f64 = 1
-  in crrModel (K, S0, r, sigma, T, n)
+  in crrModel K S0 r sigma T n

@@ -9,22 +9,40 @@ build-type:          Simple
 
 library
   hs-source-dirs:      src
+  c-sources:           src/Models/Models.c
+  default-extensions:  EmptyDataDecls
   exposed-modules:     Contracts
                      , Derivatives
-                     , Models.GeometricBrownianMotion
+                     , Models
                      , Valuation
+  other-modules:     , Models.Futhark
+                     , Models.Futhark.Config
+                     , Models.Futhark.Context
+                     , Models.Futhark.Entries
+                     , Models.Futhark.Fut
+                     , Models.Futhark.Raw
+                     , Models.Futhark.TypeClasses
+                     , Models.Futhark.Types
+                     , Models.Futhark.Utils
+                     , Models.Futhark.Wrap
   build-depends:       aeson
                      , base >=4.11 && <4.17
                      , bytestring
-                     , Chart
-                     , Chart-diagrams
+                     , deepseq
                      , erf
                      , logfloat
-                     , list-transformer
-                     , monad-bayes
+                     , massiv
+                     , monad-control
                      , mtl
                      , mwc-random
                      , random
                      , text
                      , time
                      , transformers
+                     , transformers-base
+
+executable models
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  build-depends:       contracts
+                     , base >=4.11 && <4.17

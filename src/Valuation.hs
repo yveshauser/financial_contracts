@@ -5,6 +5,10 @@ module Valuation where
 import Contracts
 
 -- | Value Process
+-- data RV a = RV
+-- newtype PR a = PR (Time -> RV a)
+
+-- | TODO: Figure 6.6 Process primitives
 class Process m where
   ifP :: m Bool -> m Double -> m Double -> m Double
   zipP :: (a -> b -> c) -> m a -> m b -> m c
