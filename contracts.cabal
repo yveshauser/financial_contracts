@@ -5,26 +5,65 @@ license:             BSD-3-Clause
 author:              Yves Hauser
 maintainer:          yves.hauser@gmail.com
 category:            Finance
-build-type:          Simple
+build-type:          Custom
+-- listed so cabal re-runs the build (and Setup.hs codegen) when they change
+extra-source-files:  src/Models/*.fut
+                     src/Models/futhark.pkg
+                     test/data/*.csv
+
+custom-setup
+  setup-depends:       base >=4.11 && <5
+                     , Cabal >=3.4
+                     , directory
+                     , filepath
+                     , process
 
 library
   hs-source-dirs:      src
+  c-sources:           src/Models/Models.c
+  default-extensions:  EmptyDataDecls
   exposed-modules:     Contracts
                      , Derivatives
-                     , Models.GeometricBrownianMotion
+                     , Models
+                     , Models.Futhark
+                     , Models.Futhark.Entries
                      , Valuation
+  other-modules:     , Models.Futhark.Config
+                     , Models.Futhark.Context
+                     , Models.Futhark.Fut
+                     , Models.Futhark.Raw
+                     , Models.Futhark.TypeClasses
+                     , Models.Futhark.Types
+                     , Models.Futhark.Utils
+                     , Models.Futhark.Wrap
   build-depends:       aeson
-                     , base >=4.11 && <4.17
+                     , base >=4.11 && <5
                      , bytestring
-                     , Chart
-                     , Chart-diagrams
+                     , deepseq
                      , erf
                      , logfloat
-                     , list-transformer
-                     , monad-bayes
+                     , massiv
+                     , monad-control
                      , mtl
                      , mwc-random
                      , random
                      , text
                      , time
                      , transformers
+                     , transformers-base
+
+executable models
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  build-depends:       contracts
+                     , base >=4.11 && <5
+                     , massiv
+
+test-suite model-tests
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             ModelTests.hs
+  build-depends:       contracts
+                     , base >=4.11 && <5
+                     , erf
+                     , massiv

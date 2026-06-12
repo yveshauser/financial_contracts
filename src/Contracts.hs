@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, RankNTypes, TypeSynonymInstances, FlexibleInstances, LiberalTypeSynonyms, IncoherentInstances, DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE GADTs, RankNTypes, FlexibleInstances, LiberalTypeSynonyms, IncoherentInstances, OverloadedStrings #-}
 
 module Contracts where
 
@@ -10,8 +10,7 @@ data Currency = CHF | EUR | USD deriving (Ord, Eq, Show)
 data Stock = X | Y | Z deriving (Ord, Eq, Show)
 data Asset = Cur Currency | Stk Stock deriving (Ord, Eq, Show)
 
--- NOTE: for now we just use relative times (in years)
-type Time = Double
+type Time = Integer
 
 -- Primitives for defining contracts, see Figure 6.2
 data Contract
