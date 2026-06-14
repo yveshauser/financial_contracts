@@ -48,7 +48,7 @@ instance Functor m => Functor (P c m) where
 
 instance Applicative m => Applicative (P c m) where
   pure a = P $ \_ -> pure $ M.makeArray M.Seq (M.Sz 1600) (const a)
-  (<*>) = undefined
+  (<*>) = zipP ($)
 
 instance Applicative m => Process (P c m) where
   ifP pb p1 p2 = g <$> zipP (,) pb (zipP (,) p1 p2)
