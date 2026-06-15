@@ -8,6 +8,8 @@
 
 import "BlackScholes"
 import "Binomial"
+import "Lattice"
+import "Paths"
 import "GeometricBrownianMotion"
 import "LSMC"
 import "Greeks"
@@ -22,6 +24,43 @@ entry binomial (variant: i8) (exercise: i8) (kind: i8)
                (s0: f64) (k: f64) (r: f64) (b: f64) (sigma: f64) (t: f64)
                (steps: i64): f64 =
   binomial variant exercise kind s0 k r b sigma t steps
+
+-- | "Composing contracts" value-process lattice (Peyton Jones et al. §8): the
+-- model operators driving `one` (exch -> priceLattice), `when` (disc),
+-- `anytime` (snell) and `until` (absorb). The Haskell side builds the boolean
+-- and value processes and threads them through here as n*n lattices.
+entry priceLattice (variant: i8) (s0: f64) (r: f64) (b: f64) (sigma: f64) (t: f64)
+                   (n: i64): [n][n]f64 =
+  priceLattice variant s0 r b sigma t n
+
+entry disc [n] (variant: i8) (kappa: f64) (sigma: f64) (r: f64) (dt: f64)
+           (bs: [n][n]f64) (vs: [n][n]f64): [n][n]f64 =
+  disc variant kappa sigma r dt bs vs
+
+entry snell [n] (variant: i8) (kappa: f64) (sigma: f64) (r: f64) (dt: f64)
+            (bs: [n][n]f64) (vs: [n][n]f64): [n][n]f64 =
+  snell variant kappa sigma r dt bs vs
+
+entry absorb [n] (variant: i8) (kappa: f64) (sigma: f64) (r: f64) (dt: f64)
+             (bs: [n][n]f64) (vs: [n][n]f64): [n][n]f64 =
+  absorb variant kappa sigma r dt bs vs
+
+-- | Path-based value process (Monte Carlo / Longstaff-Schwartz): the operators
+-- driving `one` (pricePaths), `when` (discPaths), `anytime` (snellPaths) and
+-- `until` (absorbPaths) over an [npaths][n] value process.
+entry pricePaths (s0: f64) (r: f64) (b: f64) (sigma: f64) (t: f64)
+                 (npaths: i64) (n: i64) (seed: i32): [npaths][n]f64 =
+  pricePaths npaths n seed (r - b) sigma s0 t
+
+entry discPaths [np][m] (r: f64) (dt: f64) (bs: [np][m]f64) (vs: [np][m]f64): [np][m]f64 =
+  discPaths r dt bs vs
+
+entry snellPaths [np][m] (degree: i64) (r: f64) (dt: f64)
+                 (bs: [np][m]f64) (vs: [np][m]f64): [np][m]f64 =
+  snellPaths degree r dt bs vs
+
+entry absorbPaths [np][m] (r: f64) (dt: f64) (bs: [np][m]f64) (vs: [np][m]f64): [np][m]f64 =
+  absorbPaths r dt bs vs
 
 -- | Monte Carlo over GBM paths (Miletus: MonteCarloModel)
 entry mcEuropean (kind: i8)

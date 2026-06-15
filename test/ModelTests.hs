@@ -13,14 +13,18 @@
 -- All Monte Carlo runs use fixed seeds, so the suite is deterministic.
 module Main where
 
+import Contracts (Currency (..), Asset (..), Stock (..), one)
 import Control.Monad (unless)
 import Data.Int (Int8, Int64)
 import qualified Data.Massiv.Array as M
 import Data.Number.Erf (normcdf)
+import Derivatives (american, european, OptionKind (..))
+import Models (ModelChoice (..), Market (..), runValue, runPaths, priceWith, defaultMarket)
 import Models.Futhark (FutT, getContext, runFutTIn, fromFuthark)
 import qualified Models.Futhark.Entries as E
 import System.Exit (exitFailure)
 import Text.Printf (printf)
+import Valuation (evalC)
 
 -- | Run a Futhark computation in the shared context
 type Runner = forall a. (forall c. FutT c IO a) -> IO a
@@ -62,6 +66,23 @@ sanityChecks runIn = do
   lsmc   <- runIn (E.lsmcAmerican 1 s0 k r b sigma t 100000 50 3 42)
   crrAm  <- runIn (E.binomial 0 1 0 s0 k r b sigma t 1000)
   lsmcAm <- runIn (E.lsmcAmerican 0 s0 k r b sigma t 100000 50 3 42)
+  -- the lattice value process, threaded through Futhark end to end via evalC,
+  -- priced against the per-asset market (Stk X: spot 100, vol 0.3)
+  latCall <- runIn (runValue (evalC (Cur CHF) (european Call 1 10 CHF (one (Stk X)))) defaultMarket)
+  latSpot <- runIn (runValue (evalC (Cur CHF) (one (Stk X))) defaultMarket)
+  bsITM   <- runIn (E.blackScholes 1 100 10 r b sigma t)  -- the same call, analytic
+  -- priceWith dispatch: a vanilla European goes to the chosen model's scalar
+  -- pricer; a non-vanilla contract falls back to the lattice value process
+  pwCrr   <- runIn (priceWith (Cur CHF) CRR defaultMarket (european Call 1 10 CHF (one (Stk X))))
+  crrEu   <- runIn (E.binomial 0 0 1 100 10 r b sigma t 500)  -- CRR european, 500 steps
+  pwShare <- runIn (priceWith (Cur CHF) CRR defaultMarket (one (Stk X)))
+  -- the path-based (Monte Carlo / LSMC) value process, end to end via evalC
+  pathsEu   <- runIn (runPaths (evalC (Cur CHF) (european Call 1 10 CHF (one (Stk X)))) defaultMarket)
+  mcEu      <- runIn (E.mcEuropean 1 100 10 r b sigma t 100000 50 42)  -- same paths, analytic disc
+  pathsSpot <- runIn (runPaths (evalC (Cur CHF) (one (Stk X))) defaultMarket)
+  let amPut = american Put (0, 1) 100 CHF (one (Stk X))
+  pathsAm   <- runIn (runPaths (evalC (Cur CHF) amPut) defaultMarket)
+  latAm50   <- runIn (runValue (evalC (Cur CHF) amPut) defaultMarket { steps = 50 })
   oks <- mapM report
     [ Check "Black-Scholes call matches reference value" bs 14.2313 1e-3
     , Check "put-call parity" (bs - bsPut) (s0 - k * exp (-r*t)) 1e-9
@@ -70,6 +91,13 @@ sanityChecks runIn = do
     , Check "LSMC american call equals european call (no dividends)" lsmc bs 0.1
     , Check "CRR american put matches reference value" crrAm 9.8687 1e-2
     , Check "LSMC american put agrees with CRR tree" lsmcAm crrAm 0.1
+    , Check "Lattice value process (european call) matches Black-Scholes" latCall bsITM 0.1
+    , Check "Lattice value process (one share) equals spot" latSpot 100 1e-9
+    , Check "priceWith routes a vanilla European to the chosen model (CRR)" pwCrr crrEu 1e-9
+    , Check "priceWith falls back to the lattice for non-vanilla contracts" pwShare 100 1e-9
+    , Check "Paths disc (european call) matches Monte Carlo" pathsEu mcEu 1e-6
+    , Check "Paths exch (one share) equals spot" pathsSpot 100 1e-9
+    , Check "Paths snell (american put) agrees with the 50-step lattice" pathsAm latAm50 0.15
     ]
   pure (and oks)
 

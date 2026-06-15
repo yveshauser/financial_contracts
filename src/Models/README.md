@@ -9,6 +9,8 @@ Futhark implementations of the pricing models provided by
 | `Binomial.fut`                | binomial trees: CRR, JR, JRrn, Tian, European and American exercise | `BinomialGeomRWModel` (`CRRModel`, `JRModel`, `JRrnModel`, `TianModel`) |
 | `GeometricBrownianMotion.fut` | GBM paths + Monte Carlo valuation  | `MonteCarloModel`        |
 | `LSMC.fut`                    | Longstaff-Schwartz least-squares Monte Carlo for American options | `LeastSquaresMonteCarlo` |
+| `Lattice.fut`                 | value-process lattice valuation of Peyton Jones et al. §8 (`exch`/`disc`/`snell`/`absorb`), parameterised by binomial variant (CRR/JR/JRrn/Tian via `Binomial.updp`) | — |
+| `Paths.fut`                   | path-based value process: `exch` (GBM paths), `disc`/`absorb` (plain Monte Carlo), `snell` (Longstaff-Schwartz) over a value process | — |
 | `Greeks.fut`                  | greeks by forward-mode AD (`jvp`) through the analytic, tree and MC pricers | `greeks.jl` (uses ForwardDiff) |
 | `Payoff.fut`                  | vanilla call/put payoffs           |                          |
 | `Models.fut`                  | entry points for the Haskell bindings |                       |

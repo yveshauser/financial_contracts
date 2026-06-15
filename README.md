@@ -10,7 +10,7 @@ and valued by a pricing model, in the spirit of [2] and [3].
 nix develop        # GHC, cabal, futhark, futhask
 cabal build        # Setup.hs regenerates the Futhark bindings as needed
 cabal test         # validates the models against Miletus' reference data
-cabal run models -- bs   # or: crr | jr | jrrn | tian | mc | lsmc
+cabal run models -- bs   # or: crr | jr | jrrn | tian | mc | lsmc | lattice
 ~~~
 
 ## References

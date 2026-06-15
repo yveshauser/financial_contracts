@@ -12,7 +12,8 @@ import Contracts
 class Process m where
   ifP :: m Bool -> m Double -> m Double -> m Double
   zipP :: (a -> b -> c) -> m a -> m b -> m c
-  obs :: (i -> i -> Bool) -> i -> m Bool
+  -- compare the time of each slice to a threshold (e.g. @obs (==) t@ for @at t@)
+  obs :: (Time -> Time -> Bool) -> Time -> m Bool
 
 -- | Model
 class Model m where
@@ -41,8 +42,8 @@ evalO :: (Applicative m, Process m, Model m) => Asset -> Obs a -> m a
 evalO k = eval
   where
     eval (Konst a)     = pure a
-    eval (Lift f a)    = f <$> evalO k a
-    eval (Lift2 f a b) = f <$> evalO k a <*> evalO k b
+    eval (Lift _ f a)    = f <$> evalO k a
+    eval (Lift2 _ f a b) = f <$> evalO k a <*> evalO k b
     eval (At t)        = obs (==) t
     eval (Before t)    = obs (<) t
     eval (After t)     = obs (>) t
