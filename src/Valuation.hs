@@ -12,7 +12,8 @@ import Contracts
 class Process m where
   ifP :: m Bool -> m Double -> m Double -> m Double
   zipP :: (a -> b -> c) -> m a -> m b -> m c
-  obs :: (i -> i -> Bool) -> i -> m Bool
+  -- compare the time of each slice to a threshold (e.g. @obs (==) t@ for @at t@)
+  obs :: (Time -> Time -> Bool) -> Time -> m Bool
 
 -- | Model
 class Model m where
