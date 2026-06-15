@@ -65,9 +65,9 @@ renderObs o = case o of
     At t        -> [ "at "     ++ show t ]
     After t     -> [ "after "  ++ show t ]
     Before t    -> [ "before " ++ show t ]
-    Lift _ a    -> treeNode "lift"  [renderObs a]
-    Lift2 _ a b -> treeNode "lift2" [renderObs a, renderObs b]
-    Value c     -> treeNode "value" [renderContract c]
+    Lift s _ a    -> treeNode ("lift "  ++ s) [renderObs a]
+    Lift2 s _ a b -> treeNode ("lift2 " ++ s) [renderObs a, renderObs b]
+    Value c       -> treeNode "value" [renderContract c]
 
 -- | A tree node: a label followed by its children's rendered blocks, indented.
 treeNode :: String -> [[String]] -> [String]
@@ -87,8 +87,9 @@ indentChildren kids = concat (zipWith draw isLast kids)
 -- Primitives over observables, as defined in Figure 6.3
 data Obs a where
     Konst  :: (Show a) => a -> Obs a
-    Lift   :: (a -> b) -> Obs a -> Obs b
-    Lift2  :: (a -> b -> c) -> Obs a -> Obs b -> Obs c
+    -- the leading 'String' labels the (unshowable) function for rendering
+    Lift   :: String -> (a -> b) -> Obs a -> Obs b
+    Lift2  :: String -> (a -> b -> c) -> Obs a -> Obs b -> Obs c
     At     :: Time -> Obs Bool
     After  :: Time -> Obs Bool
     Before :: Time -> Obs Bool
@@ -97,10 +98,12 @@ data Obs a where
 konst :: (Show a) => a -> Obs a
 konst = Konst
 
-lift :: (a -> b) -> Obs a -> Obs b
+-- | @lift sym f@ / @lift2 sym f@ tag the lifted function with a symbol for
+-- display (the function itself cannot be shown).
+lift :: String -> (a -> b) -> Obs a -> Obs b
 lift = Lift
 
-lift2 :: (a -> b -> c) -> Obs a -> Obs b -> Obs c
+lift2 :: String -> (a -> b -> c) -> Obs a -> Obs b -> Obs c
 lift2 = Lift2
 
 at :: Time -> Obs Bool
@@ -162,12 +165,12 @@ long = id
 
 (%&&) :: Obs Bool -> Obs Bool -> Obs Bool
 (%<), (%<=), (%==), (%>), (%>=) :: Ord a => Obs a -> Obs a -> Obs Bool
-(%<)  = lift2 (<)
-(%<=) = lift2 (<=)
-(%==) = lift2 (==)
-(%>)  = lift2 (>)
-(%>=) = lift2 (>=)
-(%&&) = lift2 (&&)
+(%<)  = lift2 "(<)"  (<)
+(%<=) = lift2 "(<=)" (<=)
+(%==) = lift2 "(==)" (==)
+(%>)  = lift2 "(>)"  (>)
+(%>=) = lift2 "(>=)" (>=)
+(%&&) = lift2 "(&&)" (&&)
 
 instance Show (Obs a) where
   show = intercalate "\n" . renderObs
@@ -175,16 +178,16 @@ instance Show (Obs a) where
 instance (Num a, Show a) => Num (Obs a)
   where
     fromInteger = konst . fromInteger
-    (+) = lift2 (+)
-    (-) = lift2 (-)
-    (*) = lift2 (*)
-    abs = lift abs
-    signum = lift signum
+    (+) = lift2 "(+)" (+)
+    (-) = lift2 "(-)" (-)
+    (*) = lift2 "(*)" (*)
+    abs = lift "abs" abs
+    signum = lift "signum" signum
 
 instance ToJSON (Obs o) where
   toJSON (Konst a)       = toJSON $ show a
-  toJSON (Lift _ o)      = object [ "lift"   .= toJSON o ]
-  toJSON (Lift2 _ o1 o2) = object [ "lift2"  .= object [ "o1" .= toJSON o1, "o2" .= toJSON o2 ]]
+  toJSON (Lift s _ o)      = object [ "lift"  .= s, "arg" .= toJSON o ]
+  toJSON (Lift2 s _ o1 o2) = object [ "lift2" .= s, "args" .= object [ "o1" .= toJSON o1, "o2" .= toJSON o2 ]]
   toJSON (Value c)       = object [ "value"  .= toJSON c ]
   toJSON (At t)          = object [ "at"     .= toJSON t ]
   toJSON (Before t)      = object [ "before" .= toJSON t ]

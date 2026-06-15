@@ -42,8 +42,8 @@ evalO :: (Applicative m, Process m, Model m) => Asset -> Obs a -> m a
 evalO k = eval
   where
     eval (Konst a)     = pure a
-    eval (Lift f a)    = f <$> evalO k a
-    eval (Lift2 f a b) = f <$> evalO k a <*> evalO k b
+    eval (Lift _ f a)    = f <$> evalO k a
+    eval (Lift2 _ f a b) = f <$> evalO k a <*> evalO k b
     eval (At t)        = obs (==) t
     eval (Before t)    = obs (<) t
     eval (After t)     = obs (>) t
