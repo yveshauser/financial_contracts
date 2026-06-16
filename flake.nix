@@ -11,9 +11,8 @@
         "x86_64-darwin"
         "aarch64-darwin"
       ];
-    in
-    {
-      devShells = forAllSystems (system:
+
+      perSystem = system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           hsPkgs = pkgs.haskellPackages;
@@ -29,6 +28,33 @@
               hash = "sha256-Kxj5MdhS6o2ObF16Fh1SKCI5Ly7prAYdfsifJP4UiII=";
             })
             { });
+
+          # The single Futhark package dependency (src/Models/futhark.pkg).
+          # Vendored so the custom Setup.hs skips `futhark pkg sync` (which would
+          # need network, unavailable in the Nix build sandbox).
+          cpprandom = pkgs.fetchFromGitHub {
+            owner = "diku-dk";
+            repo = "cpprandom";
+            rev = "ec96adc06f7a91040b2c1f7f9fdc56b9b2e9f3a3";
+            hash = "sha256-RSuqfOfTX2niXSVHc93OM9fyj6yTWxNKwEao0thvphY=";
+          };
+
+          # The library, built as a proper derivation: callCabal2nix + the
+          # Futhark codegen tools, with cpprandom dropped into src/Models/lib so
+          # Setup.hs regenerates the bindings offline.
+          financial-contracts = pkgs.haskell.lib.addBuildTools
+            (pkgs.haskell.lib.overrideCabal
+              (hsPkgs.callCabal2nix "financial-contracts" self { })
+              (old: {
+                prePatch = (old.prePatch or "") + ''
+                  rm -rf src/Models/lib
+                  cp -r ${cpprandom}/lib src/Models/lib
+                  chmod -R u+w src
+                '';
+                doCheck = false;
+                doHaddock = false;
+              }))
+            [ pkgs.futhark futhask ];
 
           ghc = hsPkgs.ghcWithPackages (p: with p; [
             aeson
@@ -47,14 +73,27 @@
             transformers-base
           ]);
         in
+        { inherit pkgs hsPkgs futhask financial-contracts ghc; };
+    in
+    {
+      # The library as a package, for downstream flakes to depend on directly.
+      packages = forAllSystems (system:
+        let s = perSystem system; in
         {
-          default = pkgs.mkShell {
+          default = s.financial-contracts;
+          financial-contracts = s.financial-contracts;
+        });
+
+      devShells = forAllSystems (system:
+        let s = perSystem system; in
+        {
+          default = s.pkgs.mkShell {
             packages = [
-              ghc
-              hsPkgs.cabal-install
-              hsPkgs.haskell-language-server
-              pkgs.futhark
-              futhask
+              s.ghc
+              s.hsPkgs.cabal-install
+              s.hsPkgs.haskell-language-server
+              s.pkgs.futhark
+              s.futhask
             ];
 
             shellHook = ''

@@ -14,7 +14,7 @@ chf = cur CHF
 eur :: Contract
 eur = cur EUR
 
-data OptionKind = Call | Put
+data OptionKind = Call | Put deriving (Show, Eq)
 
 -- | European Options
 european :: OptionKind -- ^ Kind of Option
@@ -61,58 +61,6 @@ lepo :: Time -> Currency -> Contract -> Contract
 lepo t = european Call t s
   where
     s = 0.01
-
--- SVSP map
--- 12: Yield Enhancement Products
-
--- | Discount Certificate (1200)
-dc :: Time     -- ^ Maturity
-   -> Double   -- ^ Strike Price
-   -> Currency -- ^ Currency
-   -> Contract -- ^ Underlying
-   -> Contract -- ^ Discount Certificate Contract
-dc t s c u = l `and` short o
-  where
-    l = lepo t c u
-    o = european Call t s c u
-
--- | Discount Certificate (1210)
-bdc :: Time    -- ^ Maturity
-   -> Double   -- ^ Strike Price
-   -> Double   -- ^ Barrier
-   -> Currency -- ^ Currency
-   -> Contract -- ^ Underlying
-   -> Contract -- ^ Discount Certificate Contract
-bdc t b s c u = dc t s c u `and` o
-  where
-    o = down_and_out b u $ european Put t s c u
-
--- | Reverse Convertible (1220)
-rc :: Time     -- ^ Maturity
-   -> Double   -- ^ Nominal
-   -> Double   -- ^ Coupon
-   -> Double   -- ^ Ratio
-   -> Double   -- ^ Strike Price
-   -> Currency -- ^ Currency
-   -> Contract -- ^ Underlying
-   -> Contract -- ^ Reverse Convertible Contract
-rc t n p r s c u = z `and` times r (short o)
-  where
-    z = zcb t $ (1+p)*n
-    o = european Put t s c u
-
--- | Barrier Reverse Convertible (1230)
-brc :: Time       -- ^ Maturity
-    -> Double     -- ^ Nominal
-    -> Double     -- ^ Strike Price
-    -> Double     -- ^ Barrier
-    -> Currency   -- ^ Currency
-    -> Contract   -- ^ Underlying
-    -> Contract   -- ^ Barrier Reverse Convertible Contract
-brc t n s b c u = z `and` short o
-  where
-    z = zcb t n
-    o = down_and_in b u $ european Put t s c u
 
 with_costs :: Double -> Contract -> Contract
 with_costs v c = amount v (Cur CHF) `and` c
