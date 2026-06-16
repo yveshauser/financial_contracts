@@ -1,5 +1,5 @@
 cabal-version:       3.4
-name:                contracts
+name:                financial-contracts
 version:             0.1.0.0
 license:             BSD-3-Clause
 author:              Yves Hauser
@@ -55,7 +55,7 @@ library
 executable models
   hs-source-dirs:      app
   main-is:             Main.hs
-  build-depends:       contracts
+  build-depends:       financial-contracts
                      , base >=4.11 && <5
                      , massiv
 
@@ -63,7 +63,7 @@ test-suite model-tests
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             ModelTests.hs
-  build-depends:       contracts
+  build-depends:       financial-contracts
                      , base >=4.11 && <5
                      , erf
                      , massiv

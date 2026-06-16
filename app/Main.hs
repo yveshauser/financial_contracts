@@ -4,7 +4,7 @@ import Prelude hiding (until)
 import Contracts (Contract (..), Currency (..), Asset (..), Stock (..), one, until, at)
 import Control.Monad (unless)
 import Data.List (intercalate)
-import Derivatives (american, european, brc, OptionKind (..))
+import Derivatives (american, european, OptionKind (..))
 import Models (ModelChoice (..), priceWith, defaultMarket, greeksWith, runFutT)
 import System.Environment (getArgs)
 import System.Exit (die)
@@ -64,13 +64,5 @@ main = do
   let koShareOfX = until (at 1) (one (Stk X))
   print koShareOfX
   value koShareOfX >>= \r -> putStrLn $ "Value: " ++ show r
-
-  putStrLn "=================== Barrier Reverse Convertible on X ==================="
-  -- a structured product (Derivatives.brc): a zero-coupon bond, short a
-  -- down-and-in put. Combines and/give/when/scale/value over the value process.
-  -- brc maturity nominal strike barrier currency underlying
-  let brcOnX = brc 1 1000 100 80 CHF (one (Stk X))
-  print brcOnX
-  value brcOnX >>= \r -> putStrLn $ "Value: " ++ show r
 
   return ()
