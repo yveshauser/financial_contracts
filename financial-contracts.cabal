@@ -22,7 +22,8 @@ library
   hs-source-dirs:      src
   c-sources:           src/Models/Models.c
   default-extensions:  EmptyDataDecls
-  exposed-modules:     Contracts
+  exposed-modules:     Cashflows
+                     , Contracts
                      , Derivatives
                      , Models
                      , Models.Futhark
@@ -67,3 +68,11 @@ test-suite model-tests
                      , base >=4.11 && <5
                      , erf
                      , massiv
+
+-- Pure structural cash-flow projection; no Futhark dependency.
+test-suite cashflow-tests
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             CashflowTests.hs
+  build-depends:       financial-contracts
+                     , base >=4.11 && <5
